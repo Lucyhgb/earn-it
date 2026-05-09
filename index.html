@@ -1,0 +1,2035 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>赚了么：学生党预算计算</title>
+  <style>
+    :root {
+      --primary: #8B9A8E;
+      --primary-light: #A8B5AC;
+      --primary-dark: #6B7A6E;
+      --positive: #7D9B8A;
+      --negative: #C4908A;
+      --bg: #F5F3F0;
+      --card-bg: #FEFCF9;
+      --text: #4A4A48;
+      --text-light: #8A8A88;
+      --border: #E5E2DD;
+      --shadow: 0 2px 12px rgba(0,0,0,0.06);
+      --radius: 12px;
+      --radius-sm: 8px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 420px;
+      margin: 0 auto;
+      padding: 0 12px;
+      padding-bottom: 250px;
+    }
+
+    .header {
+      background: linear-gradient(145deg, #E8E4DE 0%, #D8D4CE 100%);
+      color: var(--text);
+      padding: 12px 14px;
+      height: auto;
+      border-radius: 0 0 12px 12px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      width: 100%;
+      max-width: 100%;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    .header .container {
+      max-width: 100%;
+      margin: 0;
+      padding: 0;
+      padding-bottom: 0;
+    }
+
+    .header h1 {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--primary-dark);
+    }
+
+    .preset-buttons {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+
+    .preset-btn {
+      padding: 6px 12px;
+      border: none;
+      border-radius: 16px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: rgba(107,122,110,0.15);
+      color: var(--primary-dark);
+    }
+
+    .preset-btn:hover, .preset-btn.active { background: var(--primary-dark); color: white; }
+
+    .section {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      margin-bottom: 8px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .section-header {
+      padding: 9px 11px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+      border-left: 3px solid var(--primary);
+    }
+
+    .section-header:hover { background: rgba(139,154,142,0.06); }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 600;
+      font-size: 12px;
+    }
+
+    .section-icon { font-size: 14px; }
+
+    .section-summary { display: flex; align-items: center; gap: 5px; }
+
+    .section-daily {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 6px;
+      border-radius: 6px;
+      background: var(--bg);
+    }
+
+    .section-daily.positive { color: var(--positive); background: rgba(125,155,138,0.12); }
+    .section-daily.negative { color: var(--negative); background: rgba(196,144,138,0.12); }
+
+    .section-toggle {
+      width: 18px;
+      height: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.3s;
+      color: var(--text-light);
+      font-size: 9px;
+    }
+
+    .section.expanded .section-toggle { transform: rotate(180deg); }
+
+    .section-content {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.35s ease;
+    }
+
+    .section.expanded .section-content { max-height: 4000px; }
+
+    .section-inner { padding: 0 11px 11px; }
+
+    .identity-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px; }
+
+    .identity-tag {
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-size: 10px;
+      cursor: pointer;
+      border: 1.5px solid var(--border);
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      background: var(--bg);
+    }
+
+    .identity-tag.active { border-color: var(--primary); background: rgba(139,154,142,0.1); color: var(--primary-dark); }
+
+    .form-group { margin-bottom: 8px; }
+
+    .form-label { display: block; font-size: 9px; color: var(--text-light); margin-bottom: 3px; }
+
+    .form-row { display: flex; gap: 5px; align-items: center; flex-wrap: wrap; }
+
+    .form-input {
+      flex: 1;
+      min-width: 45px;
+      padding: 7px 8px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 11px;
+      transition: border-color 0.2s;
+      background: var(--bg);
+    }
+
+    .form-input:focus { outline: none; border-color: var(--primary); background: white; }
+    .form-input::placeholder { color: #C5C2BC; }
+
+    .form-select {
+      padding: 7px 8px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 11px;
+      background: var(--bg);
+      cursor: pointer;
+      min-width: 55px;
+    }
+
+    .form-select:focus { outline: none; border-color: var(--primary); }
+
+    .input-with-unit { display: flex; align-items: center; gap: 2px; flex: 1; min-width: 80px; }
+    .input-with-unit .unit { font-size: 10px; color: var(--text-light); white-space: nowrap; }
+
+    .input-row { display: flex; gap: 4px; align-items: center; }
+
+    .checkbox-group { display: flex; align-items: center; gap: 5px; margin-bottom: 6px; }
+
+    .checkbox-group input[type="checkbox"] { width: 14px; height: 14px; accent-color: var(--primary); cursor: pointer; }
+
+    .checkbox-group label { font-size: 10px; cursor: pointer; display: flex; align-items: center; gap: 3px; }
+
+    .subsection {
+      background: var(--bg);
+      border-radius: var(--radius-sm);
+      padding: 8px;
+      margin-bottom: 8px;
+    }
+
+    .subsection-title {
+      font-size: 9px;
+      font-weight: 600;
+      color: var(--text-light);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    .collapsible-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 8px;
+      background: var(--bg);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      margin-bottom: 5px;
+    }
+
+    .collapsible-header:hover { background: #ECEAE6; }
+    .collapsible-content { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; }
+    .collapsible.open .collapsible-content { max-height: 2000px; }
+
+    .dynamic-rows { display: flex; flex-direction: column; gap: 5px; }
+
+    .dynamic-row {
+      display: flex;
+      gap: 3px;
+      align-items: center;
+      padding: 5px;
+      background: white;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      flex-wrap: wrap;
+    }
+
+    .dynamic-row .form-input { flex: 1; min-width: 45px; }
+    .dynamic-row .form-select { min-width: 55px; flex-shrink: 0; }
+
+    .delete-row {
+      width: 22px;
+      height: 22px;
+      border: none;
+      background: rgba(196,144,138,0.15);
+      color: var(--negative);
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      flex-shrink: 0;
+    }
+
+    .delete-row:hover { background: rgba(196,144,138,0.25); }
+
+    .add-row-btn {
+      width: 100%;
+      padding: 7px;
+      border: 1.5px dashed var(--border);
+      background: transparent;
+      border-radius: var(--radius-sm);
+      color: var(--primary);
+      font-size: 10px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      margin-top: 5px;
+      transition: all 0.2s;
+    }
+
+    .add-row-btn:hover { border-color: var(--primary); background: rgba(139,154,142,0.05); }
+
+    .chip-group { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
+
+    .chip {
+      padding: 3px 8px;
+      border-radius: 10px;
+      font-size: 9px;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      transition: all 0.2s;
+      user-select: none;
+    }
+
+    .chip.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+    .chip-panel { display: none; background: var(--bg); border-radius: var(--radius-sm); padding: 8px; margin-bottom: 8px; }
+    .chip-panel.active { display: block; }
+
+    .tag-cloud { display: flex; flex-wrap: wrap; gap: 3px; margin-bottom: 6px; }
+
+    .tag {
+      padding: 2px 6px;
+      border-radius: 8px;
+      font-size: 9px;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: white;
+      transition: all 0.2s;
+    }
+
+    .tag:hover { border-color: var(--primary); }
+    .tag.selected { background: var(--primary-light); color: white; border-color: var(--primary-light); }
+
+    .tag-custom {
+      border-style: dashed;
+      border-width: 1.5px;
+      color: var(--primary);
+      background: rgba(139,154,142,0.08);
+      font-weight: 500;
+    }
+
+    .tag-custom:hover { 
+      background: rgba(139,154,142,0.18); 
+      border-color: var(--primary);
+    }
+
+    .tag-category { font-size: 9px; color: var(--text-light); margin-bottom: 3px; margin-top: 5px; }
+    .tag-category:first-child { margin-top: 0; }
+
+    .footer-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background: var(--card-bg);
+      border-top: 1px solid var(--border);
+      box-shadow: 0 -2px 12px rgba(0,0,0,0.08);
+      z-index: 1000;
+      padding: 10px 14px;
+      padding-bottom: max(10px, env(safe-area-inset-bottom));
+    }
+
+    .footer-bar .container {
+      max-width: 100%;
+      margin: 0;
+      padding: 0;
+      padding-bottom: 0;
+    }
+
+    .result-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+
+    .result-item { text-align: center; padding: 8px 6px; background: rgba(139,154,142,0.1); border-radius: var(--radius-sm); }
+    .result-item.full { grid-column: span 2; }
+
+    .result-label { font-size: 11px; color: var(--text-light); margin-bottom: 2px; }
+
+    .result-value { font-size: 16px; font-weight: 700; font-family: "SF Mono", "Roboto Mono", monospace; }
+    .result-value.positive { color: var(--positive); }
+    .result-value.negative { color: var(--negative); }
+
+    .result-hint { font-size: 10px; color: var(--text-light); margin-top: 2px; }
+
+    .alert { padding: 6px 8px; border-radius: var(--radius-sm); font-size: 9px; margin-top: 6px; }
+
+    .alert-info { background: rgba(139,154,142,0.1); color: var(--primary-dark); border-left: 3px solid var(--primary); }
+    .alert-warning { background: rgba(196,144,138,0.1); color: var(--negative); border-left: 3px solid var(--negative); }
+
+    .summary-line {
+      display: flex;
+      justify-content: space-between;
+      padding: 5px 0;
+      border-top: 1px dashed var(--border);
+      margin-top: 6px;
+      font-weight: 600;
+      font-size: 10px;
+    }
+
+    .summary-line .amount { color: var(--primary); }
+
+    .reset-btn {
+      display: block;
+      width: 100%;
+      padding: 9px;
+      margin-top: 10px;
+      border: none;
+      background: var(--bg);
+      color: var(--text-light);
+      font-size: 10px;
+      cursor: pointer;
+      border-radius: var(--radius-sm);
+      transition: all 0.2s;
+    }
+
+    .reset-btn:hover { background: rgba(196,144,138,0.1); color: var(--negative); }
+
+    .toggle-btn {
+      font-size: 8px;
+      color: var(--primary);
+      cursor: pointer;
+      padding: 2px 5px;
+      border-radius: 5px;
+      background: rgba(139,154,142,0.1);
+      border: none;
+      white-space: nowrap;
+    }
+
+    .toggle-btn:hover { background: rgba(139,154,142,0.2); }
+
+    .bus-trip-input { display: flex; gap: 3px; align-items: center; flex-wrap: wrap; }
+    .bus-trip-input .form-input { flex: 1; min-width: 40px; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .section { animation: fadeIn 0.4s ease backwards; }
+    .section:nth-child(1) { animation-delay: 0.03s; }
+    .section:nth-child(2) { animation-delay: 0.06s; }
+    .section:nth-child(3) { animation-delay: 0.09s; }
+    .section:nth-child(4) { animation-delay: 0.12s; }
+    .section:nth-child(5) { animation-delay: 0.15s; }
+    .section:nth-child(6) { animation-delay: 0.18s; }
+    .section:nth-child(7) { animation-delay: 0.21s; }
+    .section:nth-child(8) { animation-delay: 0.24s; }
+    .section:nth-child(9) { animation-delay: 0.27s; }
+    .section:nth-child(10) { animation-delay: 0.30s; }
+  </style>
+</head>
+<body>
+
+<header class="header" id="mainHeader">
+  <div class="container">
+    <h1>💰 赚了么：学生党预算计算</h1>
+    <div class="preset-buttons">
+      <button class="preset-btn" data-preset="out_of_town">异地实习</button>
+      <button class="preset-btn" data-preset="local">本地实习</button>
+      <button class="preset-btn" data-preset="none">清除</button>
+    </div>
+  </div>
+</header>
+
+<main class="container" id="main-content">
+  <section class="section expanded" data-section="identity">
+    <div class="section-header">
+      <div class="section-title"><span class="section-icon">💰</span><span>收入来源</span></div>
+      <div class="section-summary"><span class="section-daily positive" id="incomeDaily">¥0.0/天</span></div>
+      <div class="section-toggle">▼</div>
+    </div>
+    <div class="section-content">
+      <div class="section-inner">
+        <div class="identity-tags" id="identityTags">
+          <div class="identity-tag" data-identity="internship">实习 💼</div>
+          <div class="identity-tag" data-identity="graduate">在校 📚</div>
+          <div class="identity-tag" data-identity="family">家里支持 🏠</div>
+          <div class="identity-tag" data-identity="parttime">兼职 🧾</div>
+        </div>
+        <div id="identityContent"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" data-section="meals">
+    <div class="section-header">
+      <div class="section-title"><span class="section-icon">🍽️</span><span>餐饮支出</span></div>
+      <div class="section-summary"><span class="section-daily negative" id="mealsDaily">¥0.0/天</span></div>
+      <div class="section-toggle">▼</div>
+    </div>
+    <div class="section-content">
+      <div class="section-inner" id="mealsContent"></div>
+    </div>
+  </section>
+
+  <section class="section" data-section="commute">
+    <div class="section-header">
+      <div class="section-title"><span class="section-icon">🚌</span><span>通勤支出</span></div>
+      <div class="section-summary"><span class="section-daily negative" id="commuteDaily">¥0.0/天</span></div>
+      <div class="section-toggle">▼</div>
+    </div>
+    <div class="section-content">
+      <div class="section-inner" id="commuteContent"></div>
+    </div>
+  </section>
+
+  <section class="section" data-section="housing">
+    <div class="section-header">
+      <div class="section-title"><span class="section-icon">🏠</span><span>住房固定</span></div>
+      <div class="section-summary"><span class="section-daily negative" id="housingDaily">¥0.0/天</span></div>
+      <div class="section-toggle">▼</div>
+    </div>
+    <div class="section-content">
+      <div class="section-inner" id="housingContent"></div>
+    </div>
+  </section>
+
+  <section class="section" data-section="consumables">
+    <div class="section-header">
+      <div class="section-title"><span class="section-icon">🧴</span><span>消耗品</span></div>
+      <div class="section-summary"><span class="section-daily negative" id="consumablesDaily">¥0.0/天</span></div>
+      <div class="section-toggle">▼</div>
+    </div>
+    <div class="section-content">
+      <div class="section-inner" id="consumablesContent"></div>
+    </div>
+  </section>
+
+  <section class="section" data-section="membership">
+    <div class="section-header">
+      <div class="section-title"><span class="section-icon">💎</span><span>会员订阅</span></div>
+      <div class="section-summary"><span class="section-daily negative" id="membershipDaily">¥0.0/天</span></div>
+      <div class="section-toggle">▼</div>
+    </div>
+    <div class="section-content">
+      <div class="section-inner" id="membershipContent"></div>
+    </div>
+  </section>
+
+  <section class="section" data-section="entertainment">
+    <div class="section-header">
+      <div class="section-title"><span class="section-icon">📦</span><span>其他支出</span></div>
+      <div class="section-summary"><span class="section-daily negative" id="entertainmentDaily">¥0.0/天</span></div>
+      <div class="section-toggle">▼</div>
+    </div>
+    <div class="section-content">
+      <div class="section-inner" id="entertainmentContent"></div>
+    </div>
+  </section>
+
+  <section class="section" data-section="startup">
+    <div class="section-header">
+      <div class="section-title"><span class="section-icon">🚀</span><span>启动成本</span></div>
+      <div class="section-summary"><span class="section-daily" id="startupDaily">¥0.0/天</span></div>
+      <div class="section-toggle">▼</div>
+    </div>
+    <div class="section-content">
+      <div class="section-inner" id="startupContent"></div>
+    </div>
+  </section>
+
+  <section class="section" data-section="savings">
+    <div class="section-header">
+      <div class="section-title"><span class="section-icon">🎯</span><span>弹性储蓄目标</span></div>
+      <div class="section-summary"><span class="section-daily" id="savingsDaily">¥0.0/天</span></div>
+      <div class="section-toggle">▼</div>
+    </div>
+    <div class="section-content">
+      <div class="section-inner" id="savingsContent"></div>
+    </div>
+  </section>
+
+  <button class="reset-btn" id="resetBtn">🔄 重置所有数据</button>
+</main>
+
+<div class="footer-bar" id="mainFooter">
+  <div class="container">
+    <div class="result-grid">
+      <div class="result-item">
+        <div class="result-label">日均实际盈余</div>
+        <div class="result-value positive" id="resultDaily">¥0.0</div>
+      </div>
+      <div class="result-item">
+        <div class="result-label">月预估结余</div>
+        <div class="result-value positive" id="resultMonthly">¥0.0</div>
+      </div>
+      <div class="result-item full" id="breakevenRow">
+        <div class="result-label">回本天数</div>
+        <div class="result-value" id="resultBreakeven">—</div>
+        <div class="result-hint" id="breakevenHint"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = 'survival_clock_v40';
+
+const CONSUMABLE_PRESETS = {
+  general: ['洗发水', '护发素', '沐浴露', '牙膏', '牙刷', '洗面奶', '护肤水', '护肤乳', '精华', '面霜', '眼霜', '防晒霜', '卸妆水', '身体乳', '洗手液'],
+  cosmetics: ['粉底液', '散粉', '眉笔', '眼影', '眼线笔', '睫毛膏', '口红', '腮红', '遮瑕膏', '美妆蛋'],
+  daily: ['卫生纸', '抽纸', '湿厕纸', '洗衣液', '柔顺剂', '垃圾袋'],
+  female: ['卫生巾', '卫生棉条', '护垫', '月经杯'],
+  male: ['剃须刀', '剃须泡']
+};
+
+const MEMBERSHIP_PRESETS = {
+  video: [
+    { id: 'bilibili', name: 'B站', price: 25 },
+    { id: 'tencent', name: '腾讯视频', price: 25 },
+    { id: 'iqiyi', name: '爱奇艺', price: 25 },
+    { id: 'mango', name: '芒果TV', price: 20 },
+    { id: 'youku', name: '优酷', price: 15 }
+  ],
+  audio: [
+    { id: 'music163', name: '网易云音乐', price: 15 },
+    { id: 'qqmusic', name: 'QQ音乐', price: 15 },
+    { id: 'kugou', name: '酷狗', price: 8 },
+    { id: 'ximalaya', name: '喜马拉雅', price: 25 }
+  ],
+  office: [
+    { id: 'wps', name: 'WPS会员', price: 15 },
+    { id: 'baidupan', name: '百度网盘', price: 30 },
+    { id: 'quark', name: '夸克网盘', price: 18 },
+    { id: 'ai', name: 'AI会员', price: 50 }
+  ]
+};
+
+const DEFAULT_DATA = {
+  identity: { internship: false, graduate: false, family: false, parttime: false },
+  preset: 'none',
+  income: {
+    internship: {
+      salaryType: 'monthly', salary: 0,
+      workDaysPerWeek: 5, hoursPerDay: 8,
+      mealSubsidy: { enabled: false, perMeal: 0, coversLunch: false, coversDinner: false, wastePercent: 0 },
+      transportSubsidy: { type: 'none', amount: 0 }
+    },
+    graduate: {
+      grant: 0, grantMonths: 12, labSubsidy: 0, labMonths: 12, taSubsidy: 0, taMonths: 12,
+      mentorBonus: 0, mentorMonths: 12, projectIncome: 0, projectMonths: 12,
+      awardYearly: 0, tuitionExpense: false, tuitionYearly: 0
+    },
+    family: { frequency: 'month', amount: 0 },
+    parttimeJobs: []
+  },
+  expense: {
+    meals: {
+      breakfast: { simple: 0, detailed: [] },
+      lunch: { simple: 0, detailed: [] },
+      dinner: { simple: 0, detailed: [] },
+      extras: []
+    },
+    commute: {
+      types: [],
+      walk: 0,
+      bike: { type: 'monthly', monthly: 0, perTrip: 0, weekly: 0, purchase: 0, maintenance: 0 },
+      eBike: { distance: 0, trips: 2, range: 50, chargeCost: 2, weeklyDays: 5, purchase: 0 },
+      bus: { type: 'perTrip', monthly: 0, goTrip: { price: 0, weekly: 0 }, returnTrip: { price: 0, weekly: 0 } },
+      taxi: { goTrip: { price: 0, weekly: 0 }, returnTrip: { price: 0, weekly: 0 } }
+    },
+    housing: { rent: 0, utilities: { electricity: 0, water: 0, gas: 0, internet: 0 }, management: 0, ac: { enabled: false, summer: 0, winter: 0, summerMonths: 3, winterMonths: 3 } },
+    consumables: [],
+    memberships: [],
+    entertainment: [],
+    health: 0
+  },
+  startup: {
+    oneTime: { transport: 0, luggage: 0, deposit: 0, setup: 0 },
+    recurring: { enabled: false, destination: '', frequency: 'monthly', cost: 0 },
+    amortize: false, months: 6
+  },
+  savings: { enabled: false, goals: [] }
+};
+
+const PRESETS = {
+  out_of_town: {
+    identity: { internship: true, graduate: false, family: false, parttime: false },
+    income: {
+      internship: { salaryType: 'daily', salary: 150, workDaysPerWeek: 5, hoursPerDay: 8, mealSubsidy: { enabled: false, perMeal: 0, coversLunch: false, coversDinner: false, wastePercent: 0 }, transportSubsidy: { type: 'none', amount: 0 } },
+      graduate: JSON.parse(JSON.stringify(DEFAULT_DATA.income.graduate)),
+      family: { frequency: 'month', amount: 0 }, parttimeJobs: []
+    },
+    expense: {
+      meals: { breakfast: { simple: 8, detailed: [] }, lunch: { simple: 20, detailed: [] }, dinner: { simple: 15, detailed: [] }, extras: [{ name: '奶茶', amount: 50, frequency: 'weekly' }] },
+      commute: { types: ['bus'], walk: 0, bike: { type: 'monthly', monthly: 0, perTrip: 0, weekly: 0, purchase: 0, maintenance: 0 }, eBike: { distance: 0, trips: 2, range: 50, chargeCost: 2, weeklyDays: 5, purchase: 0 }, bus: { type: 'perTrip', monthly: 0, goTrip: { price: 3, weekly: 5 }, returnTrip: { price: 3, weekly: 5 } }, taxi: { goTrip: { price: 0, weekly: 0 }, returnTrip: { price: 0, weekly: 0 } } },
+      housing: { rent: 2500, utilities: { electricity: 150, water: 30, gas: 0, internet: 100 }, management: 100, ac: { enabled: false, summer: 0, winter: 0, summerMonths: 3, winterMonths: 3 } },
+      consumables: [], memberships: [], entertainment: [], health: 0
+    },
+    startup: { oneTime: { transport: 600, luggage: 0, deposit: 0, setup: 0 }, recurring: { enabled: false, destination: '', frequency: 'monthly', cost: 0 }, amortize: false, months: 6 },
+    savings: { enabled: false, goals: [] }
+  },
+  local: {
+    identity: { internship: true, graduate: false, family: false, parttime: false },
+    income: {
+      internship: { salaryType: 'daily', salary: 150, workDaysPerWeek: 5, hoursPerDay: 8, mealSubsidy: { enabled: false, perMeal: 0, coversLunch: false, coversDinner: false, wastePercent: 0 }, transportSubsidy: { type: 'none', amount: 0 } },
+      graduate: JSON.parse(JSON.stringify(DEFAULT_DATA.income.graduate)),
+      family: { frequency: 'month', amount: 0 }, parttimeJobs: []
+    },
+    expense: {
+      meals: { breakfast: { simple: 8, detailed: [] }, lunch: { simple: 20, detailed: [] }, dinner: { simple: 15, detailed: [] }, extras: [{ name: '奶茶', amount: 50, frequency: 'weekly' }] },
+      commute: { types: ['bus'], walk: 0, bike: { type: 'monthly', monthly: 0, perTrip: 0, weekly: 0, purchase: 0, maintenance: 0 }, eBike: { distance: 0, trips: 2, range: 50, chargeCost: 2, weeklyDays: 5, purchase: 0 }, bus: { type: 'perTrip', monthly: 0, goTrip: { price: 3, weekly: 5 }, returnTrip: { price: 3, weekly: 5 } }, taxi: { goTrip: { price: 0, weekly: 0 }, returnTrip: { price: 0, weekly: 0 } } },
+      housing: { rent: 0, utilities: { electricity: 0, water: 0, gas: 0, internet: 0 }, management: 0, ac: { enabled: false, summer: 0, winter: 0, summerMonths: 3, winterMonths: 3 } },
+      consumables: [], memberships: [], entertainment: [], health: 0
+    },
+    startup: { oneTime: { transport: 0, luggage: 0, deposit: 0, setup: 0 }, recurring: { enabled: false, destination: '', frequency: 'monthly', cost: 0 }, amortize: false, months: 6 },
+    savings: { enabled: false, goals: [] }
+  }
+};
+
+let appData = JSON.parse(JSON.stringify(DEFAULT_DATA));
+let saveTimer = null;
+
+function parseNum(val, fallback = 0) {
+  const n = parseFloat(val);
+  return isNaN(n) || n < 0 ? fallback : n;
+}
+
+function formatMoney(num) { return '¥' + num.toFixed(1); }
+
+function getFreqDiv(freq) {
+  const map = { daily: 1, weekly: 7, biweekly: 14, monthly: 30, semester: 120, once: 0 };
+  return map[freq] || 1;
+}
+
+function getCycleDiv(cycle) {
+  const map = { monthly: 30, quarterly: 90, yearly: 365 };
+  return map[cycle] || 30;
+}
+
+function debounce(fn, delay = 300) {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(fn, delay);
+}
+
+function loadData() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      appData = deepMerge(JSON.parse(JSON.stringify(DEFAULT_DATA)), JSON.parse(saved));
+    }
+  } catch (e) { console.warn('Load failed:', e); }
+}
+
+function saveData() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(appData)); } catch (e) { console.warn('Save failed:', e); }
+}
+
+function deepMerge(target, source) {
+  for (const key in source) {
+    if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
+      target[key] = deepMerge(target[key] || {}, source[key]);
+    } else {
+      target[key] = source[key];
+    }
+  }
+  return target;
+}
+
+function calcDailyIncome() {
+  let daily = 0;
+  const inc = appData.income;
+
+  if (appData.identity.internship) {
+    const { salaryType, salary, workDaysPerWeek, hoursPerDay } = inc.internship;
+    if (salaryType === 'monthly') {
+      daily += parseNum(salary) / 30;
+    } else if (salaryType === 'daily') {
+      const daysPerMonth = (parseNum(workDaysPerWeek) * 52) / 12;
+      daily += parseNum(salary) * daysPerMonth / 30;
+    } else if (salaryType === 'hourly') {
+      const hoursPerMonth = parseNum(hoursPerDay) * parseNum(workDaysPerWeek) * 52 / 12;
+      daily += parseNum(salary) * hoursPerMonth / 30;
+    }
+  }
+
+  if (appData.identity.graduate) {
+    const g = inc.graduate;
+    daily += (parseNum(g.grant) * parseNum(g.grantMonths)) / 365;
+    daily += (parseNum(g.labSubsidy) * parseNum(g.labMonths)) / 365;
+    daily += (parseNum(g.taSubsidy) * parseNum(g.taMonths)) / 365;
+    daily += (parseNum(g.mentorBonus) * parseNum(g.mentorMonths)) / 365;
+    daily += (parseNum(g.projectIncome) * parseNum(g.projectMonths)) / 365;
+    daily += parseNum(g.awardYearly) / 365;
+  }
+
+  if (appData.identity.family) {
+    daily += parseNum(inc.family.amount) / getFreqDiv(inc.family.frequency);
+  }
+
+  if (appData.identity.parttime) {
+    inc.parttimeJobs.forEach(job => {
+      if (job.frequency === 'once') {
+        daily += parseNum(job.amount) / parseNum(job.intervalDays || 30);
+      } else {
+        daily += parseNum(job.amount) / getFreqDiv(job.frequency);
+      }
+    });
+  }
+
+  return daily;
+}
+
+function calcMealSubsidyIncome() {
+  if (!appData.identity.internship) return 0;
+  const ms = appData.income.internship.mealSubsidy;
+  if (!ms.enabled) return 0;
+  let monthly = 0;
+  if (ms.coversLunch) monthly += parseNum(ms.perMeal) * 22;
+  if (ms.coversDinner) monthly += parseNum(ms.perMeal) * 22;
+  const effective = monthly * (1 - parseNum(ms.wastePercent) / 100);
+  return effective / 30;
+}
+
+function calcTransportSubsidyIncome() {
+  if (!appData.identity.internship) return 0;
+  const ts = appData.income.internship.transportSubsidy;
+  if (ts.type === 'monthly') return parseNum(ts.amount) / 30;
+  if (ts.type === 'daily') return parseNum(ts.amount);
+  return 0;
+}
+
+function calcMealsExpense() {
+  let daily = 0;
+  const meals = appData.expense.meals;
+
+  const calcMeal = (m) => {
+    if (m.detailed.length === 0) {
+      daily += parseNum(m.simple);
+    }
+    m.detailed.forEach(item => {
+      if (item.type === 'perTrip') {
+        daily += (parseNum(item.price) * parseNum(item.weeklyTimes)) / 7;
+      } else if (item.type === 'stockpile') {
+        const weeklyUse = parseNum(item.weeklyTimes || 0) * parseNum(item.itemsPerUse || 1);
+        const totalUsePerDay = weeklyUse / 7;
+        const pricePerItem = parseNum(item.totalPrice) / parseNum(item.totalQuantity) || 0;
+        daily += totalUsePerDay * pricePerItem;
+      }
+    });
+  };
+
+  calcMeal(meals.breakfast);
+  calcMeal(meals.lunch);
+  calcMeal(meals.dinner);
+
+  meals.extras.forEach(ex => {
+    daily += parseNum(ex.amount) / getFreqDiv(ex.frequency);
+  });
+
+  return daily;
+}
+
+function calcCommuteExpense() {
+  let daily = 0;
+  const c = appData.expense.commute;
+  const types = c.types || [];
+
+  if (types.includes('walk')) {
+    daily += parseNum(c.walk);
+  }
+
+  if (types.includes('bike')) {
+    if (c.bike.type === 'monthly') daily += parseNum(c.bike.monthly) / 30;
+    else if (c.bike.type === 'perTrip') daily += parseNum(c.bike.perTrip) * parseNum(c.bike.weekly || 0) / 7;
+    else if (c.bike.type === 'purchase') daily += (parseNum(c.bike.purchase) / 365) + parseNum(c.bike.maintenance) / 30;
+  }
+
+  if (types.includes('ebike')) {
+    const weeklyKm = parseNum(c.eBike.distance) * parseNum(c.eBike.trips) * parseNum(c.eBike.weeklyDays);
+    const chargesPerWeek = weeklyKm / parseNum(c.eBike.range);
+    const weeklyChargeCost = chargesPerWeek * parseNum(c.eBike.chargeCost);
+    daily += weeklyChargeCost / 7;
+    if (parseNum(c.eBike.purchase) > 0) daily += parseNum(c.eBike.purchase) / (365 * 3);
+  }
+
+  if (types.includes('bus')) {
+    if (c.bus.type === 'monthly') daily += parseNum(c.bus.monthly) / 30;
+    else if (c.bus.type === 'perTrip') {
+      const goCost = parseNum(c.bus.goTrip?.price || 0) * parseNum(c.bus.goTrip?.weekly || 0);
+      const returnCost = parseNum(c.bus.returnTrip?.price || 0) * parseNum(c.bus.returnTrip?.weekly || 0);
+      daily += (goCost + returnCost) / 7;
+    }
+  }
+
+  if (types.includes('taxi')) {
+    const goCost = parseNum(c.taxi.goTrip?.price || 0) * parseNum(c.taxi.goTrip?.weekly || 0);
+    const returnCost = parseNum(c.taxi.returnTrip?.price || 0) * parseNum(c.taxi.returnTrip?.weekly || 0);
+    daily += (goCost + returnCost) / 7;
+  }
+
+  return daily;
+}
+
+function calcHousingExpense() {
+  let daily = parseNum(appData.expense.housing.rent) / 30;
+  const h = appData.expense.housing;
+  daily += parseNum(h.utilities.electricity) / 30;
+  daily += parseNum(h.utilities.water) / 30;
+  daily += parseNum(h.utilities.gas) / 30;
+  daily += parseNum(h.utilities.internet) / 30;
+  daily += parseNum(h.management) / 30;
+  if (h.ac.enabled) {
+    daily += parseNum(h.ac.summer) / (30 * parseNum(h.ac.summerMonths || 3));
+    daily += parseNum(h.ac.winter) / (30 * parseNum(h.ac.winterMonths || 3));
+  }
+  return daily;
+}
+
+function calcConsumablesExpense() {
+  return appData.expense.consumables.reduce((sum, item) => {
+    return sum + parseNum(item.price) / parseNum(item.days || 30);
+  }, 0);
+}
+
+function calcMembershipsExpense() {
+  return appData.expense.memberships.reduce((sum, m) => {
+    const cycle = m.cycle || 'monthly';
+    return sum + parseNum(m.price) / getCycleDiv(cycle);
+  }, 0);
+}
+
+function calcEntertainmentExpense() {
+  return appData.expense.entertainment.reduce((sum, ex) => {
+    return sum + parseNum(ex.amount) / getFreqDiv(ex.frequency);
+  }, 0);
+}
+
+function calcHealthExpense() {
+  return parseNum(appData.expense.health) / 30;
+}
+
+function calcStartupDaily() {
+  const s = appData.startup;
+  if (!s.amortize || !parseNum(s.months)) return 0;
+  const total = parseNum(s.oneTime.transport) + parseNum(s.oneTime.luggage) + parseNum(s.oneTime.deposit) + parseNum(s.oneTime.setup);
+  return total / parseNum(s.months) / 30;
+}
+
+function calcSavingsDaily() {
+  if (!appData.savings.enabled) return 0;
+  return appData.savings.goals.reduce((sum, g) => {
+    const target = parseNum(g.targetAmount);
+    const months = parseNum(g.planMonths) || 1;
+    return sum + target / months / 30;
+  }, 0);
+}
+
+function recalculate() {
+  const incomeDaily = calcDailyIncome() + calcMealSubsidyIncome() + calcTransportSubsidyIncome();
+  const mealsDaily = calcMealsExpense();
+  const commuteDaily = calcCommuteExpense();
+  const housingDaily = calcHousingExpense();
+  const consumablesDaily = calcConsumablesExpense();
+  const membershipsDaily = calcMembershipsExpense();
+  const entertainmentDaily = calcEntertainmentExpense();
+  const healthDaily = calcHealthExpense();
+  const startupDaily = calcStartupDaily();
+  const savingsDaily = calcSavingsDaily();
+
+  const expenseDaily = mealsDaily + commuteDaily + housingDaily + consumablesDaily + membershipsDaily + entertainmentDaily + healthDaily + startupDaily;
+  const dailyNet = incomeDaily - expenseDaily;
+  const monthlyNet = dailyNet * 30;
+
+  const startupTotal = parseNum(appData.startup.oneTime.transport) + parseNum(appData.startup.oneTime.luggage) + parseNum(appData.startup.oneTime.deposit) + parseNum(appData.startup.oneTime.setup);
+
+  document.getElementById('incomeDaily').textContent = formatMoney(incomeDaily) + '/天';
+  document.getElementById('incomeDaily').className = 'section-daily ' + (incomeDaily >= 0 ? 'positive' : 'negative');
+
+  document.getElementById('mealsDaily').textContent = formatMoney(mealsDaily) + '/天';
+  document.getElementById('commuteDaily').textContent = formatMoney(commuteDaily) + '/天';
+  document.getElementById('housingDaily').textContent = formatMoney(housingDaily) + '/天';
+  document.getElementById('consumablesDaily').textContent = formatMoney(consumablesDaily) + '/天';
+  document.getElementById('membershipDaily').textContent = formatMoney(membershipsDaily) + '/天';
+  document.getElementById('entertainmentDaily').textContent = formatMoney(entertainmentDaily + healthDaily) + '/天';
+  document.getElementById('startupDaily').textContent = formatMoney(startupDaily) + '/天';
+  document.getElementById('savingsDaily').textContent = formatMoney(savingsDaily) + '/天';
+
+  const dailyEl = document.getElementById('resultDaily');
+  dailyEl.textContent = formatMoney(dailyNet);
+  dailyEl.className = 'result-value ' + (dailyNet >= 0 ? 'positive' : 'negative');
+
+  const monthlyEl = document.getElementById('resultMonthly');
+  monthlyEl.textContent = formatMoney(monthlyNet);
+  monthlyEl.className = 'result-value ' + (monthlyNet >= 0 ? 'positive' : 'negative');
+
+  const breakevenEl = document.getElementById('resultBreakeven');
+  const breakevenHint = document.getElementById('breakevenHint');
+  const breakevenRow = document.getElementById('breakevenRow');
+
+  if (startupTotal > 0 && appData.startup.amortize) {
+    breakevenRow.style.display = 'none';
+  } else if (startupTotal > 0 && dailyNet > 0) {
+    const days = Math.ceil(startupTotal / dailyNet);
+    breakevenEl.textContent = days + '天';
+    breakevenEl.className = 'result-value positive';
+    breakevenHint.textContent = `启动成本 ${formatMoney(startupTotal)}，约${Math.ceil(days / 30)}个月回本`;
+    breakevenRow.style.display = 'block';
+  } else if (startupTotal > 0) {
+    breakevenEl.textContent = '无法回本';
+    breakevenEl.className = 'result-value negative';
+    breakevenHint.textContent = `月赤字 ${formatMoney(monthlyNet)}`;
+    breakevenRow.style.display = 'block';
+  } else {
+    breakevenRow.style.display = 'none';
+  }
+
+  debounce(saveData);
+}
+
+function renderIdentityContent() {
+  const container = document.getElementById('identityContent');
+  let html = '';
+
+  if (appData.identity.internship) {
+    const inc = appData.income.internship;
+    html += `
+      <div class="subsection">
+        <div class="subsection-title">实习收入 💼</div>
+        <div class="form-group">
+          <label class="form-label">薪资类型</label>
+          <div class="form-row">
+            <select class="form-select" id="intern_salaryType">
+              <option value="monthly" ${inc.salaryType === 'monthly' ? 'selected' : ''}>月薪</option>
+              <option value="daily" ${inc.salaryType === 'daily' ? 'selected' : ''}>日薪</option>
+              <option value="hourly" ${inc.salaryType === 'hourly' ? 'selected' : ''}>时薪</option>
+            </select>
+            <div class="input-with-unit"><input type="number" class="form-input" id="intern_salary" value="${inc.salary || ''}" placeholder="0" min="0" step="0.1"><span class="unit">元</span></div>
+          </div>
+        </div>
+        <div id="attendanceFields">
+          ${inc.salaryType === 'daily' ? `
+            <div class="form-group"><label class="form-label">每周到岗天数</label><div class="input-with-unit"><input type="number" class="form-input" id="intern_workDays" value="${inc.workDaysPerWeek || 5}" placeholder="5" min="1" max="7"><span class="unit">天/周</span></div></div>
+          ` : ''}
+          ${inc.salaryType === 'hourly' ? `
+            <div class="form-group"><label class="form-label">每天工作时长</label><div class="input-with-unit"><input type="number" class="form-input" id="intern_hoursDay" value="${inc.hoursPerDay || 8}" placeholder="8" min="1" max="24"><span class="unit">小时</span></div></div>
+            <div class="form-group"><label class="form-label">每周到岗天数</label><div class="input-with-unit"><input type="number" class="form-input" id="intern_workDays" value="${inc.workDaysPerWeek || 5}" placeholder="5" min="1" max="7"><span class="unit">天/周</span></div></div>
+          ` : ''}
+        </div>
+        <div class="checkbox-group">
+          <input type="checkbox" id="mealSubsidy_enabled" ${inc.mealSubsidy.enabled ? 'checked' : ''}>
+          <label for="mealSubsidy_enabled">有餐补</label>
+        </div>
+        <div id="mealSubsidyFields" style="${inc.mealSubsidy.enabled ? '' : 'display:none;'}">
+          <div class="form-group"><label class="form-label">每顿餐补</label><div class="input-with-unit"><input type="number" class="form-input" id="mealSubsidy_perMeal" value="${inc.mealSubsidy.perMeal || ''}" placeholder="0" min="0" step="0.1"><span class="unit">元/顿</span></div></div>
+          <div class="checkbox-group"><input type="checkbox" id="mealSubsidy_lunch" ${inc.mealSubsidy.coversLunch ? 'checked' : ''}><label for="mealSubsidy_lunch">覆盖午餐</label></div>
+          <div class="checkbox-group"><input type="checkbox" id="mealSubsidy_dinner" ${inc.mealSubsidy.coversDinner ? 'checked' : ''}><label for="mealSubsidy_dinner">覆盖晚餐</label></div>
+          <div class="form-group"><label class="form-label">未用完浪费比例</label><div class="input-with-unit"><input type="number" class="form-input" id="mealSubsidy_waste" value="${inc.mealSubsidy.wastePercent || 0}" placeholder="0" min="0" max="100"><span class="unit">%</span></div></div>
+        </div>
+        <div class="form-group"><label class="form-label">交通补贴</label><div class="form-row"><select class="form-select" id="transportSubsidy_type"><option value="none" ${inc.transportSubsidy.type === 'none' ? 'selected' : ''}>无</option><option value="monthly" ${inc.transportSubsidy.type === 'monthly' ? 'selected' : ''}>月固定</option><option value="daily" ${inc.transportSubsidy.type === 'daily' ? 'selected' : ''}>日补贴</option></select><div class="input-with-unit"><input type="number" class="form-input" id="transportSubsidy_amount" value="${inc.transportSubsidy.amount || ''}" placeholder="0" min="0" step="0.1"><span class="unit">元</span></div></div></div>
+      </div>
+    `;
+  }
+
+  if (appData.identity.graduate) {
+    html += `
+      <div class="subsection">
+        <div class="subsection-title">读研收入 📚</div>
+        <div class="form-group"><label class="form-label">国家助学金</label><div class="form-row"><div class="input-with-unit"><input type="number" class="form-input" id="grad_grant" value="${appData.income.graduate.grant || ''}" placeholder="0" min="0" step="0.1"><span class="unit">元/月</span></div><select class="form-select" id="grad_grantMonths"><option value="10" ${appData.income.graduate.grantMonths == 10 ? 'selected' : ''}>10个月</option><option value="12" ${appData.income.graduate.grantMonths == 12 ? 'selected' : ''}>12个月</option></select></div></div>
+        <div class="form-group"><label class="form-label">课题组补贴</label><div class="form-row"><div class="input-with-unit"><input type="number" class="form-input" id="grad_lab" value="${appData.income.graduate.labSubsidy || ''}" placeholder="0" min="0" step="0.1"><span class="unit">元/月</span></div><select class="form-select" id="grad_labMonths"><option value="10" ${appData.income.graduate.labMonths == 10 ? 'selected' : ''}>10个月</option><option value="12" ${appData.income.graduate.labMonths == 12 ? 'selected' : ''}>12个月</option></select></div></div>
+        <div class="form-group"><label class="form-label">助教/助研津贴</label><div class="form-row"><div class="input-with-unit"><input type="number" class="form-input" id="grad_ta" value="${appData.income.graduate.taSubsidy || ''}" placeholder="0" min="0" step="0.1"><span class="unit">元/月</span></div><select class="form-select" id="grad_taMonths"><option value="10" ${appData.income.graduate.taMonths == 10 ? 'selected' : ''}>10个月</option><option value="12" ${appData.income.graduate.taMonths == 12 ? 'selected' : ''}>12个月</option></select></div></div>
+        <div class="form-group"><label class="form-label">导师额外补贴</label><div class="form-row"><div class="input-with-unit"><input type="number" class="form-input" id="grad_mentor" value="${appData.income.graduate.mentorBonus || ''}" placeholder="0" min="0" step="0.1"><span class="unit">元/月</span></div><select class="form-select" id="grad_mentorMonths"><option value="10" ${appData.income.graduate.mentorMonths == 10 ? 'selected' : ''}>10个月</option><option value="12" ${appData.income.graduate.mentorMonths == 12 ? 'selected' : ''}>12个月</option></select></div></div>
+        <div class="form-group"><label class="form-label">横向项目月均</label><div class="form-row"><div class="input-with-unit"><input type="number" class="form-input" id="grad_project" value="${appData.income.graduate.projectIncome || ''}" placeholder="0" min="0" step="0.1"><span class="unit">元/月</span></div><select class="form-select" id="grad_projectMonths"><option value="10" ${appData.income.graduate.projectMonths == 10 ? 'selected' : ''}>10个月</option><option value="12" ${appData.income.graduate.projectMonths == 12 ? 'selected' : ''}>12个月</option></select></div></div>
+        <div class="form-group"><label class="form-label">奖学金（年总额）</label><div class="input-with-unit"><input type="number" class="form-input" id="grad_award" value="${appData.income.graduate.awardYearly || ''}" placeholder="0" min="0" step="0.1"><span class="unit">元/年</span></div></div>
+        <div class="checkbox-group"><input type="checkbox" id="grad_tuition" ${appData.income.graduate.tuitionExpense ? 'checked' : ''}><label for="grad_tuition">将学费计入支出</label></div>
+        <div id="tuitionField" style="${appData.income.graduate.tuitionExpense ? '' : 'display:none;'}"><div class="form-group"><label class="form-label">年学费</label><div class="input-with-unit"><input type="number" class="form-input" id="grad_tuitionYearly" value="${appData.income.graduate.tuitionYearly || ''}" placeholder="0" min="0" step="0.1"><span class="unit">元/年</span></div></div></div>
+      </div>
+    `;
+  }
+
+  if (appData.identity.family) {
+    html += `
+      <div class="subsection">
+        <div class="subsection-title">家里支持 🏠</div>
+        <div class="form-group"><label class="form-label">支持频率</label><div class="form-row"><select class="form-select" id="family_frequency"><option value="weekly" ${appData.income.family.frequency === 'weekly' ? 'selected' : ''}>每周</option><option value="monthly" ${appData.income.family.frequency === 'monthly' ? 'selected' : ''}>每月</option><option value="semester" ${appData.income.family.frequency === 'semester' ? 'selected' : ''}>每学期</option></select><div class="input-with-unit"><input type="number" class="form-input" id="family_amount" value="${appData.income.family.amount || ''}" placeholder="0" min="0" step="0.1"><span class="unit">元</span></div></div></div>
+      </div>
+    `;
+  }
+
+  if (appData.identity.parttime) {
+    html += `
+      <div class="subsection">
+        <div class="subsection-title">兼职收入 🧾</div>
+        <div class="dynamic-rows" id="parttimeRows"></div>
+        <button class="add-row-btn" id="addParttimeBtn">+ 新增兼职</button>
+      </div>
+    `;
+  }
+
+  container.innerHTML = html;
+  renderParttimeRows();
+}
+
+function renderParttimeRows() {
+  const container = document.getElementById('parttimeRows');
+  if (!container) return;
+
+  container.innerHTML = appData.income.parttimeJobs.map((job, idx) => `
+    <div class="dynamic-row">
+      <input type="text" class="form-input job-name" value="${job.name || ''}" placeholder="名称" data-idx="${idx}">
+      <input type="number" class="form-input job-amount" value="${job.amount || ''}" placeholder="金额" min="0" step="0.1" data-idx="${idx}">
+      <select class="form-select job-freq" data-idx="${idx}">
+        <option value="daily" ${job.frequency === 'daily' ? 'selected' : ''}>每天</option>
+        <option value="weekly" ${job.frequency === 'weekly' ? 'selected' : ''}>每周</option>
+        <option value="monthly" ${job.frequency === 'monthly' ? 'selected' : ''}>每月</option>
+        <option value="once" ${job.frequency === 'once' ? 'selected' : ''}>单次</option>
+      </select>
+      <button class="delete-row" data-action="deleteParttime" data-idx="${idx}">×</button>
+    </div>
+    <div class="dynamic-row" style="${job.frequency === 'once' ? '' : 'display:none;'}">
+      <input type="number" class="form-input job-interval" value="${job.intervalDays || 30}" placeholder="间隔天数" min="1" data-idx="${idx}">
+      <span class="unit" style="font-size:9px;color:var(--text-light)">天/次</span>
+    </div>
+  `).join('');
+}
+
+function renderMealsContent() {
+  const container = document.getElementById('mealsContent');
+  const meals = appData.expense.meals;
+
+  container.innerHTML = `
+    <div class="subsection">
+      <div class="subsection-title">早餐</div>
+      <div class="form-row">
+        <div class="input-with-unit" style="flex:1;"><input type="number" class="form-input meal-simple" id="meal_breakfast_simple" value="${meals.breakfast.simple || ''}" placeholder="每日平均" min="0" step="0.1"><span class="unit">元/天</span></div>
+        <button class="toggle-btn" data-target="breakfastDetail">详细</button>
+      </div>
+      <div id="breakfastDetail" class="collapsible" style="margin-top:6px;">
+        <div class="collapsible-content">
+          <div class="alert alert-info" style="margin-bottom:6px;font-size:8px;padding:4px 6px;">💡 添加详细条目将自动清空"每日平均"</div>
+          <div class="dynamic-rows" id="breakfastRows"></div>
+          <button class="add-row-btn" data-action="addMealDetail" data-item="breakfast">+ 添加选项</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="subsection">
+      <div class="subsection-title">午餐</div>
+      <div class="form-row">
+        <div class="input-with-unit" style="flex:1;"><input type="number" class="form-input meal-simple" id="meal_lunch_simple" value="${meals.lunch.simple || ''}" placeholder="每日平均" min="0" step="0.1"><span class="unit">元/天</span></div>
+        <button class="toggle-btn" data-target="lunchDetail">详细</button>
+      </div>
+      <div id="lunchDetail" class="collapsible" style="margin-top:6px;">
+        <div class="collapsible-content">
+          <div class="alert alert-info" style="margin-bottom:6px;font-size:8px;padding:4px 6px;">💡 添加详细条目将自动清空"每日平均"</div>
+          <div class="dynamic-rows" id="lunchRows"></div>
+          <button class="add-row-btn" data-action="addMealDetail" data-item="lunch">+ 添加选项</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="subsection">
+      <div class="subsection-title">晚餐</div>
+      <div class="form-row">
+        <div class="input-with-unit" style="flex:1;"><input type="number" class="form-input meal-simple" id="meal_dinner_simple" value="${meals.dinner.simple || ''}" placeholder="每日平均" min="0" step="0.1"><span class="unit">元/天</span></div>
+        <button class="toggle-btn" data-target="dinnerDetail">详细</button>
+      </div>
+      <div id="dinnerDetail" class="collapsible" style="margin-top:6px;">
+        <div class="collapsible-content">
+          <div class="alert alert-info" style="margin-bottom:6px;font-size:8px;padding:4px 6px;">💡 添加详细条目将自动清空"每日平均"</div>
+          <div class="dynamic-rows" id="dinnerRows"></div>
+          <button class="add-row-btn" data-action="addMealDetail" data-item="dinner">+ 添加选项</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="subsection">
+      <div class="subsection-title">奶茶·零食·咖啡</div>
+      <div class="dynamic-rows" id="extrasRows"></div>
+      <button class="add-row-btn" id="addExtraBtn">+ 添加项目</button>
+    </div>
+  `;
+
+  renderMealDetailRows('breakfastRows', meals.breakfast.detailed);
+  renderMealDetailRows('lunchRows', meals.lunch.detailed);
+  renderMealDetailRows('dinnerRows', meals.dinner.detailed);
+  renderExtrasRows();
+}
+
+function renderMealDetailRows(containerId, items) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  container.innerHTML = items.map((item, idx) => {
+    const itemKey = containerId.replace('Rows', '');
+    if (item.type === 'stockpile') {
+      return `
+        <div class="dynamic-row">
+          <select class="form-select detail-type" data-item="${itemKey}" data-idx="${idx}" style="min-width:70px;">
+            <option value="perTrip">按次</option>
+            <option value="stockpile" selected>囤货均摊</option>
+          </select>
+          <input type="text" class="form-input detail-name" value="${item.name || ''}" placeholder="名称" data-item="${itemKey}" data-idx="${idx}">
+          <button class="delete-row" data-action="deleteMealDetail" data-item="${itemKey}" data-idx="${idx}">×</button>
+        </div>
+        <div class="dynamic-row">
+          <input type="number" class="form-input detail-totalPrice" value="${item.totalPrice || ''}" placeholder="总价" min="0" step="0.1" data-item="${itemKey}" data-idx="${idx}" style="flex:1;min-width:40px;">
+          <input type="number" class="form-input detail-totalQty" value="${item.totalQuantity || ''}" placeholder="总数量" min="1" data-item="${itemKey}" data-idx="${idx}" style="flex:1;min-width:40px;">
+          <input type="number" class="form-input detail-weeklyTimes" value="${item.weeklyTimes || ''}" placeholder="每周几次" min="0" data-item="${itemKey}" data-idx="${idx}" style="flex:1;min-width:40px;">
+          <input type="number" class="form-input detail-itemsPerUse" value="${item.itemsPerUse || ''}" placeholder="每次几个" min="1" data-item="${itemKey}" data-idx="${idx}" style="flex:1;min-width:40px;">
+        </div>
+      `;
+    }
+    return `
+      <div class="dynamic-row">
+        <select class="form-select detail-type" data-item="${itemKey}" data-idx="${idx}" style="min-width:70px;">
+          <option value="perTrip" selected>按次</option>
+          <option value="stockpile">囤货均摊</option>
+        </select>
+        <input type="text" class="form-input detail-name" value="${item.name || ''}" placeholder="名称" data-item="${itemKey}" data-idx="${idx}">
+        <button class="delete-row" data-action="deleteMealDetail" data-item="${itemKey}" data-idx="${idx}">×</button>
+      </div>
+      <div class="dynamic-row">
+        <input type="number" class="form-input detail-price" value="${item.price || ''}" placeholder="单价" min="0" step="0.1" data-item="${itemKey}" data-idx="${idx}">
+        <input type="number" class="form-input detail-times" value="${item.weeklyTimes || ''}" placeholder="每周几次" min="0" data-item="${itemKey}" data-idx="${idx}">
+        <span class="unit" style="font-size:9px;color:var(--text-light)">次/周</span>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderExtrasRows() {
+  const container = document.getElementById('extrasRows');
+  if (!container) return;
+
+  container.innerHTML = appData.expense.meals.extras.map((ex, idx) => `
+    <div class="dynamic-row">
+      <input type="text" class="form-input extra-name" value="${ex.name || ''}" placeholder="名称" data-idx="${idx}">
+      <input type="number" class="form-input extra-amount" value="${ex.amount || ''}" placeholder="金额" min="0" step="0.1" data-idx="${idx}">
+      <select class="form-select extra-freq" data-idx="${idx}">
+        <option value="weekly" ${ex.frequency === 'weekly' ? 'selected' : ''}>每周</option>
+        <option value="monthly" ${ex.frequency === 'monthly' ? 'selected' : ''}>每月</option>
+      </select>
+      <button class="delete-row" data-action="deleteExtra" data-idx="${idx}">×</button>
+    </div>
+  `).join('');
+}
+
+function renderCommuteContent() {
+  const container = document.getElementById('commuteContent');
+  const c = appData.expense.commute;
+  const types = c.types || [];
+
+  container.innerHTML = `
+    <div class="chip-group">
+      <div class="chip ${types.includes('walk') ? 'active' : ''}" data-action="toggleCommute" data-type="walk">🚶 步行</div>
+      <div class="chip ${types.includes('bike') ? 'active' : ''}" data-action="toggleCommute" data-type="bike">🚲 单车</div>
+      <div class="chip ${types.includes('ebike') ? 'active' : ''}" data-action="toggleCommute" data-type="ebike">🛵 电动车</div>
+      <div class="chip ${types.includes('bus') ? 'active' : ''}" data-action="toggleCommute" data-type="bus">🚌 公交地铁</div>
+      <div class="chip ${types.includes('taxi') ? 'active' : ''}" data-action="toggleCommute" data-type="taxi">🚕 打车</div>
+    </div>
+
+    <div class="chip-panel ${types.includes('walk') ? 'active' : ''}" id="panel_walk">
+      <div class="form-group"><label class="form-label">步行通勤（天/周）</label><div class="input-with-unit"><input type="number" class="form-input" id="commute_walk" value="${c.walk || ''}" placeholder="0" min="0" max="7" step="1"><span class="unit">天/周</span></div></div>
+    </div>
+
+    <div class="chip-panel ${types.includes('bike') ? 'active' : ''}" id="panel_bike">
+      <div class="form-group"><label class="form-label">共享单车</label><select class="form-select" id="bike_type" style="width:100%;"><option value="monthly" ${c.bike.type === 'monthly' ? 'selected' : ''}>月卡</option><option value="perTrip" ${c.bike.type === 'perTrip' ? 'selected' : ''}>单次</option><option value="purchase" ${c.bike.type === 'purchase' ? 'selected' : ''}>自购均摊</option></select></div>
+      <div id="bikeMonthlyField" class="form-group" style="${c.bike.type === 'monthly' ? '' : 'display:none;'}"><label class="form-label">月卡费用</label><div class="input-with-unit"><input type="number" class="form-input" id="bike_monthly" value="${c.bike.monthly || ''}" placeholder="0" min="0" step="0.1"><span class="unit">元/月</span></div></div>
+      <div id="bikePerTripField" class="form-group" style="${c.bike.type === 'perTrip' ? '' : 'display:none;'}"><label class="form-label">单次费用</label><div class="input-row"><div class="input-with-unit"><input type="number" class="form-input" id="bike_perTrip" value="${c.bike.perTrip || ''}" placeholder="0" min="0" step="0.1"><span class="unit">元/次</span></div><div class="input-with-unit"><input type="number" class="form-input" id="bike_weekly" value="${c.bike.weekly || ''}" placeholder="次数" min="0"><span class="unit">次/周</span></div></div></div>
+      <div id="bikePurchaseField" class="form-group" style="${c.bike.type === 'purchase' ? '' : 'display:none;'}"><label class="form-label">自购自行车</label><div class="form-row"><div class="input-with-unit"><input type="number" class="form-input" id="bike_purchase" value="${c.bike.purchase || ''}" placeholder="购车" min="0" step="0.1"><span class="unit">元</span></div><div class="input-with-unit"><input type="number" class="form-input" id="bike_maintenance" value="${c.bike.maintenance || ''}" placeholder="维护/月" min="0" step="0.1"><span class="unit">元/月</span></div></div></div>
+    </div>
+
+    <div class="chip-panel ${types.includes('ebike') ? 'active' : ''}" id="panel_ebike">
+      <div class="subsection-title">电动车通勤计算</div>
+      <div class="form-group"><label class="form-label">单程通勤距离</label><div class="input-with-unit"><input type="number" class="form-input" id="ebike_distance" value="${c.eBike.distance || ''}" placeholder="0" min="0" step="0.1"><span class="unit">公里</span></div></div>
+      <div class="form-group"><label class="form-label">每天来回趟数</label><div class="input-with-unit"><input type="number" class="form-input" id="ebike_trips" value="${c.eBike.trips || 2}" placeholder="2" min="1" max="4"><span class="unit">趟</span></div></div>
+      <div class="form-group"><label class="form-label">车辆满电续航</label><div class="input-with-unit"><input type="number" class="form-input" id="ebike_range" value="${c.eBike.range || 50}" placeholder="50" min="1"><span class="unit">公里</span></div></div>
+      <div class="form-group"><label class="form-label">单次充满电费</label><div class="input-with-unit"><input type="number" class="form-input" id="ebike_chargeCost" value="${c.eBike.chargeCost || ''}" placeholder="0" min="0" step="0.1"><span class="unit">元</span></div></div>
+      <div class="form-group"><label class="form-label">每周通勤天数</label><div class="input-with-unit"><input type="number" class="form-input" id="ebike_weeklyDays" value="${c.eBike.weeklyDays || 5}" placeholder="5" min="1" max="7"><span class="unit">天</span></div></div>
+      <div class="form-group"><label class="form-label">车辆购置费（均摊3年）</label><div class="input-with-unit"><input type="number" class="form-input" id="ebike_purchase" value="${c.eBike.purchase || ''}" placeholder="0" min="0" step="0.1"><span class="unit">元</span></div></div>
+      <div class="summary-line"><span>估算日均充电费</span><span class="amount" id="ebikeDailyCost">¥0.0</span></div>
+    </div>
+
+    <div class="chip-panel ${types.includes('bus') ? 'active' : ''}" id="panel_bus">
+      <div class="form-group"><label class="form-label">公交/地铁</label><select class="form-select" id="bus_type" style="width:100%;"><option value="monthly" ${c.bus.type === 'monthly' ? 'selected' : ''}>月卡</option><option value="perTrip" ${c.bus.type === 'perTrip' ? 'selected' : ''}>单次</option></select></div>
+      <div id="busMonthlyField" class="form-group" style="${c.bus.type === 'monthly' ? '' : 'display:none;'}"><label class="form-label">月卡费用</label><div class="input-with-unit"><input type="number" class="form-input" id="bus_monthly" value="${c.bus.monthly || ''}" placeholder="0" min="0" step="0.1"><span class="unit">元/月</span></div></div>
+      <div id="busPerTripField" class="form-group" style="${c.bus.type === 'perTrip' ? '' : 'display:none;'}">
+        <div class="form-group"><label class="form-label">去程</label><div class="input-row"><div class="input-with-unit"><input type="number" class="form-input" id="bus_go_price" value="${c.bus.goTrip?.price || ''}" placeholder="单价" min="0" step="0.1"><span class="unit">元/次</span></div><div class="input-with-unit"><input type="number" class="form-input" id="bus_go_weekly" value="${c.bus.goTrip?.weekly || ''}" placeholder="次数" min="0"><span class="unit">次/周</span></div></div></div>
+        <div class="form-group"><label class="form-label">返程</label><div class="input-row"><div class="input-with-unit"><input type="number" class="form-input" id="bus_return_price" value="${c.bus.returnTrip?.price || ''}" placeholder="单价" min="0" step="0.1"><span class="unit">元/次</span></div><div class="input-with-unit"><input type="number" class="form-input" id="bus_return_weekly" value="${c.bus.returnTrip?.weekly || ''}" placeholder="次数" min="0"><span class="unit">次/周</span></div></div></div>
+      </div>
+    </div>
+
+    <div class="chip-panel ${types.includes('taxi') ? 'active' : ''}" id="panel_taxi">
+      <div class="form-group"><label class="form-label">去程</label><div class="input-row"><div class="input-with-unit"><input type="number" class="form-input" id="taxi_go_price" value="${c.taxi?.goTrip?.price || ''}" placeholder="单价" min="0" step="0.1"><span class="unit">元/次</span></div><div class="input-with-unit"><input type="number" class="form-input" id="taxi_go_weekly" value="${c.taxi?.goTrip?.weekly || ''}" placeholder="次数" min="0"><span class="unit">次/周</span></div></div></div>
+      <div class="form-group"><label class="form-label">返程</label><div class="input-row"><div class="input-with-unit"><input type="number" class="form-input" id="taxi_return_price" value="${c.taxi?.returnTrip?.price || ''}" placeholder="单价" min="0" step="0.1"><span class="unit">元/次</span></div><div class="input-with-unit"><input type="number" class="form-input" id="taxi_return_weekly" value="${c.taxi?.returnTrip?.weekly || ''}" placeholder="次数" min="0"><span class="unit">次/周</span></div></div></div>
+    </div>
+  `;
+
+  updateEbikeDisplay();
+}
+
+function renderHousingContent() {
+  const container = document.getElementById('housingContent');
+  const h = appData.expense.housing;
+
+  container.innerHTML = `
+    <div class="form-group"><label class="form-label">月租金</label><div class="input-with-unit"><input type="number" class="form-input" id="housing_rent" value="${h.rent || ''}" placeholder="0" min="0" step="0.1"><span class="unit">元/月</span></div></div>
+    <div class="form-group"><label class="form-label">电费</label><div class="input-with-unit"><input type="number" class="form-input" id="housing_elec" value="${h.utilities.electricity || ''}" placeholder="0" min="0" step="0.1"><span class="unit">元/月</span></div></div>
+    <div class="form-group"><label class="form-label">水费</label><div class="input-with-unit"><input type="number" class="form-input" id="housing_water" value="${h.utilities.water || ''}" placeholder="0" min="0" step="0.1"><span class="unit">元/月</span></div></div>
+    <div class="form-group"><label class="form-label">燃气费</label><div class="input-with-unit"><input type="number" class="form-input" id="housing_gas" value="${h.utilities.gas || ''}" placeholder="0" min="0" step="0.1"><span class="unit">元/月</span></div></div>
+    <div class="form-group"><label class="form-label">网络费</label><div class="input-with-unit"><input type="number" class="form-input" id="housing_inet" value="${h.utilities.internet || ''}" placeholder="0" min="0" step="0.1"><span class="unit">元/月</span></div></div>
+    <div class="form-group"><label class="form-label">管理费</label><div class="input-with-unit"><input type="number" class="form-input" id="housing_mgmt" value="${h.management || ''}" placeholder="0" min="0" step="0.1"><span class="unit">元/月</span></div></div>
+    <div class="checkbox-group"><input type="checkbox" id="ac_enabled" ${h.ac.enabled ? 'checked' : ''}><label for="ac_enabled">空调/取暖费（季节差价）</label></div>
+    <div id="acFields" style="${h.ac.enabled ? '' : 'display:none;'}">
+      <div class="form-row">
+        <div class="form-group" style="flex:1;"><label class="form-label">夏季月均</label><div class="input-with-unit"><input type="number" class="form-input" id="ac_summer" value="${h.ac.summer || ''}" placeholder="0" min="0" step="0.1"><span class="unit">元</span></div></div>
+        <div class="form-group" style="flex:1;"><label class="form-label">冬季月均</label><div class="input-with-unit"><input type="number" class="form-input" id="ac_winter" value="${h.ac.winter || ''}" placeholder="0" min="0" step="0.1"><span class="unit">元</span></div></div>
+      </div>
+    </div>
+  `;
+}
+
+function renderConsumablesContent() {
+  const container = document.getElementById('consumablesContent');
+
+  let tagHtml = '';
+
+  const categories = [
+    { key: 'general', name: '通用洗护', items: CONSUMABLE_PRESETS.general },
+    { key: 'cosmetics', name: '化妆品', items: CONSUMABLE_PRESETS.cosmetics },
+    { key: 'daily', name: '日常用品', items: CONSUMABLE_PRESETS.daily },
+    { key: 'female', name: '女性用品', items: CONSUMABLE_PRESETS.female },
+    { key: 'male', name: '男性用品', items: CONSUMABLE_PRESETS.male }
+  ];
+
+  categories.forEach(cat => {
+    tagHtml += `<div class="tag-category">${cat.name}</div><div class="tag-cloud">`;
+    cat.items.forEach(t => {
+      const selected = appData.expense.consumables.find(c => c.name === t);
+      const selectedClass = selected ? ' selected' : '';
+      tagHtml += `<span class="tag${selectedClass}" data-action="toggleConsumable" data-name="${t}">${t}</span>`;
+    });
+    tagHtml += `<span class="tag tag-custom" data-action="addCustomConsumable" data-cat="${cat.key}">+ 自定义</span>`;
+    tagHtml += '</div>';
+  });
+
+  container.innerHTML = `
+    <div class="subsection">
+      <div class="subsection-title">快速添加</div>
+      ${tagHtml}
+    </div>
+    <div class="subsection">
+      <div class="subsection-title">已添加项目</div>
+      <div class="dynamic-rows" id="consumableRows"></div>
+    </div>
+  `;
+
+  renderConsumableRows();
+}
+
+function renderConsumableRows() {
+  const container = document.getElementById('consumableRows');
+  if (!container) return;
+
+  container.innerHTML = appData.expense.consumables.map((item, idx) => `
+    <div class="dynamic-row">
+      <input type="text" class="form-input cons-name" value="${item.name || ''}" placeholder="物品名" data-idx="${idx}">
+      <input type="number" class="form-input cons-price" value="${item.price || ''}" placeholder="价格" min="0" step="0.1" data-idx="${idx}">
+      <input type="number" class="form-input cons-days" value="${item.days || ''}" placeholder="用几天" min="1" data-idx="${idx}">
+      <button class="delete-row" data-action="deleteConsumable" data-idx="${idx}">×</button>
+    </div>
+  `).join('');
+}
+
+function renderMembershipContent() {
+  const container = document.getElementById('membershipContent');
+
+  let videoHtml = '<div class="tag-cloud">';
+  MEMBERSHIP_PRESETS.video.forEach(m => {
+    const selected = appData.expense.memberships.find(mb => mb.id === m.id);
+    const selectedClass = selected ? ' selected' : '';
+    videoHtml += `<span class="tag${selectedClass}" data-action="toggleMembership" data-id="${m.id}" data-price="${m.price}">${m.name}</span>`;
+  });
+  videoHtml += `<span class="tag tag-custom" data-action="addCustomMembership" data-cat="video">+ 自定义</span>`;
+  videoHtml += '</div>';
+
+  let audioHtml = '<div class="tag-cloud">';
+  MEMBERSHIP_PRESETS.audio.forEach(m => {
+    const selected = appData.expense.memberships.find(mb => mb.id === m.id);
+    const selectedClass = selected ? ' selected' : '';
+    audioHtml += `<span class="tag${selectedClass}" data-action="toggleMembership" data-id="${m.id}" data-price="${m.price}">${m.name}</span>`;
+  });
+  audioHtml += `<span class="tag tag-custom" data-action="addCustomMembership" data-cat="audio">+ 自定义</span>`;
+  audioHtml += '</div>';
+
+  let officeHtml = '<div class="tag-cloud">';
+  MEMBERSHIP_PRESETS.office.forEach(m => {
+    const selected = appData.expense.memberships.find(mb => mb.id === m.id);
+    const selectedClass = selected ? ' selected' : '';
+    officeHtml += `<span class="tag${selectedClass}" data-action="toggleMembership" data-id="${m.id}" data-price="${m.price}">${m.name}</span>`;
+  });
+  officeHtml += `<span class="tag tag-custom" data-action="addCustomMembership" data-cat="office">+ 自定义</span>`;
+  officeHtml += '</div>';
+
+  container.innerHTML = `
+    <div class="subsection">
+      <div class="subsection-title">视频</div>
+      ${videoHtml}
+    </div>
+    <div class="subsection">
+      <div class="subsection-title">音频</div>
+      ${audioHtml}
+    </div>
+    <div class="subsection">
+      <div class="subsection-title">网盘与办公</div>
+      ${officeHtml}
+    </div>
+    <div class="subsection">
+      <div class="subsection-title">已订阅</div>
+      <div class="dynamic-rows" id="membershipRows"></div>
+    </div>
+  `;
+
+  renderMembershipRows();
+}
+
+function renderMembershipRows() {
+  const container = document.getElementById('membershipRows');
+  if (!container) return;
+
+  container.innerHTML = appData.expense.memberships.map((m, idx) => {
+    let name = m.name || m.id;
+    let isCustom = !Object.values(MEMBERSHIP_PRESETS).flat().find(p => p.id === m.id);
+    for (const cat in MEMBERSHIP_PRESETS) {
+      const found = MEMBERSHIP_PRESETS[cat].find(p => p.id === m.id);
+      if (found) { name = found.name; break; }
+    }
+    const cycle = m.cycle || 'monthly';
+    if (isCustom) {
+      return `
+        <div class="dynamic-row">
+          <input type="text" class="form-input member-name" value="${name || ''}" placeholder="自定义名称" data-idx="${idx}" style="flex:1;min-width:50px;">
+          <input type="number" class="form-input member-price" value="${m.price || ''}" placeholder="金额" min="0" step="0.1" data-idx="${idx}" style="width:50px;">
+          <select class="form-select member-cycle" data-idx="${idx}" style="min-width:45px;">
+            <option value="monthly" ${cycle === 'monthly' ? 'selected' : ''}>月</option>
+            <option value="quarterly" ${cycle === 'quarterly' ? 'selected' : ''}>季</option>
+            <option value="yearly" ${cycle === 'yearly' ? 'selected' : ''}>年</option>
+          </select>
+          <button class="delete-row" data-action="deleteMembership" data-idx="${idx}">×</button>
+        </div>
+      `;
+    }
+    return `
+      <div class="dynamic-row">
+        <span style="flex:1;font-size:10px;">${name}</span>
+        <input type="number" class="form-input member-price" value="${m.price || ''}" placeholder="金额" min="0" step="0.1" data-idx="${idx}" style="width:50px;">
+        <select class="form-select member-cycle" data-idx="${idx}" style="min-width:45px;">
+          <option value="monthly" ${cycle === 'monthly' ? 'selected' : ''}>月</option>
+          <option value="quarterly" ${cycle === 'quarterly' ? 'selected' : ''}>季</option>
+          <option value="yearly" ${cycle === 'yearly' ? 'selected' : ''}>年</option>
+        </select>
+        <button class="delete-row" data-action="deleteMembership" data-idx="${idx}">×</button>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderEntertainmentContent() {
+  const container = document.getElementById('entertainmentContent');
+
+  container.innerHTML = `
+    <div class="subsection">
+      <div class="subsection-title">娱乐支出</div>
+      <div class="dynamic-rows" id="entertainmentRows"></div>
+      <button class="add-row-btn" id="addEntertainmentBtn">+ 添加娱乐项目</button>
+    </div>
+    <div class="subsection">
+      <div class="subsection-title">医疗健康</div>
+      <div class="form-group"><label class="form-label">月预算</label><div class="input-with-unit"><input type="number" class="form-input" id="health_monthly" value="${appData.expense.health || ''}" placeholder="0" min="0" step="0.1"><span class="unit">元/月</span></div></div>
+    </div>
+  `;
+
+  renderEntertainmentRows();
+}
+
+function renderEntertainmentRows() {
+  const container = document.getElementById('entertainmentRows');
+  if (!container) return;
+
+  container.innerHTML = appData.expense.entertainment.map((ex, idx) => `
+    <div class="dynamic-row">
+      <input type="text" class="form-input ent-name" value="${ex.name || ''}" placeholder="名称" data-idx="${idx}">
+      <input type="number" class="form-input ent-amount" value="${ex.amount || ''}" placeholder="金额" min="0" step="0.1" data-idx="${idx}">
+      <select class="form-select ent-freq" data-idx="${idx}">
+        <option value="weekly" ${ex.frequency === 'weekly' ? 'selected' : ''}>每周</option>
+        <option value="monthly" ${ex.frequency === 'monthly' ? 'selected' : ''}>每月</option>
+      </select>
+      <button class="delete-row" data-action="deleteEntertainment" data-idx="${idx}">×</button>
+    </div>
+  `).join('');
+}
+
+function renderStartupContent() {
+  const container = document.getElementById('startupContent');
+  const s = appData.startup;
+
+  container.innerHTML = `
+    <div class="subsection">
+      <div class="subsection-title">一次性启动成本</div>
+      <div class="form-group"><label class="form-label">去程交通费</label><div class="input-with-unit"><input type="number" class="form-input" id="startup_transport" value="${s.oneTime.transport || ''}" placeholder="0" min="0" step="0.1"><span class="unit">元</span></div></div>
+      <div class="form-group"><label class="form-label">行李邮寄费</label><div class="input-with-unit"><input type="number" class="form-input" id="startup_luggage" value="${s.oneTime.luggage || ''}" placeholder="0" min="0" step="0.1"><span class="unit">元</span></div></div>
+      <div class="form-group"><label class="form-label">首月房租押金</label><div class="input-with-unit"><input type="number" class="form-input" id="startup_deposit" value="${s.oneTime.deposit || ''}" placeholder="0" min="0" step="0.1"><span class="unit">元</span></div></div>
+      <div class="form-group"><label class="form-label">安家采购费</label><div class="input-with-unit"><input type="number" class="form-input" id="startup_setup" value="${s.oneTime.setup || ''}" placeholder="0" min="0" step="0.1"><span class="unit">元</span></div></div>
+      <div class="summary-line"><span>启动成本合计</span><span class="amount" id="startupTotalDisplay">¥0.0</span></div>
+    </div>
+
+    <div class="subsection">
+      <div class="subsection-title">周期性往返</div>
+      <div class="checkbox-group">
+        <input type="checkbox" id="startup_recurring_enabled" ${s.recurring.enabled ? 'checked' : ''}>
+        <label for="startup_recurring_enabled">需要定期回家/出差</label>
+      </div>
+      <div id="recurringFields" style="${s.recurring.enabled ? '' : 'display:none;'}">
+        <div class="form-group"><label class="form-label">目的地</label><div class="input-with-unit"><input type="text" class="form-input" id="startup_recurring_dest" value="${s.recurring.destination || ''}" placeholder="如：老家"></div></div>
+        <div class="form-group"><label class="form-label">往返费用</label><div class="form-row"><div class="input-with-unit"><input type="number" class="form-input" id="startup_recurring_cost" value="${s.recurring.cost || ''}" placeholder="0" min="0" step="0.1"><span class="unit">元</span></div><select class="form-select" id="startup_recurring_freq"><option value="monthly" ${s.recurring.frequency === 'monthly' ? 'selected' : ''}>每月</option><option value="biweekly" ${s.recurring.frequency === 'biweekly' ? 'selected' : ''}>每两周</option><option value="semester" ${s.recurring.frequency === 'semester' ? 'selected' : ''}>每学期</option></select></div></div>
+      </div>
+    </div>
+
+    <div class="subsection">
+      <div class="checkbox-group">
+        <input type="checkbox" id="startup_amortize" ${s.amortize ? 'checked' : ''}>
+        <label for="startup_amortize">平摊至总时长（计入日均支出）</label>
+      </div>
+      <div id="amortizeField" style="${s.amortize ? '' : 'display:none;'}"><div class="form-group"><label class="form-label">分摊月数</label><div class="input-with-unit"><input type="number" class="form-input" id="startup_months" value="${s.months || 6}" placeholder="6" min="1"><span class="unit">个月</span></div></div></div>
+      <div class="alert alert-info">💡 不平摊时，启动成本仅作为回本计算参考</div>
+    </div>
+  `;
+
+  updateStartupDisplay();
+}
+
+function renderSavingsContent() {
+  const container = document.getElementById('savingsContent');
+  const s = appData.savings;
+
+  container.innerHTML = `
+    <div class="checkbox-group">
+      <input type="checkbox" id="savings_enabled" ${s.enabled ? 'checked' : ''}>
+      <label for="savings_enabled">启用弹性储蓄目标</label>
+    </div>
+    <div id="savingsFields" style="${s.enabled ? '' : 'display:none;'}">
+      <div class="dynamic-rows" id="savingsRows"></div>
+      <button class="add-row-btn" id="addSavingsBtn">+ 添加储蓄目标</button>
+      <div class="alert alert-warning">💰 此模块不计入实际盈余，仅供规划参考</div>
+    </div>
+  `;
+
+  renderSavingsRows();
+}
+
+function renderSavingsRows() {
+  const container = document.getElementById('savingsRows');
+  if (!container) return;
+
+  container.innerHTML = appData.savings.goals.map((g, idx) => {
+    const monthly = parseNum(g.targetAmount) / parseNum(g.planMonths || 1);
+    return `
+      <div class="dynamic-row">
+        <input type="text" class="form-input savings-name" value="${g.name || ''}" placeholder="目标名称" data-idx="${idx}">
+        <button class="delete-row" data-action="deleteSavings" data-idx="${idx}">×</button>
+      </div>
+      <div class="dynamic-row">
+        <div class="input-with-unit" style="flex:1;"><input type="number" class="form-input savings-amount" value="${g.targetAmount || ''}" placeholder="目标金额" min="0" step="0.1" data-idx="${idx}"><span class="unit">元</span></div>
+        <div class="input-with-unit" style="flex:1;"><input type="number" class="form-input savings-months" value="${g.planMonths || ''}" placeholder="计划月数" min="1" data-idx="${idx}"><span class="unit">月</span></div>
+      </div>
+      <div class="summary-line"><span>每月需储蓄</span><span class="amount">¥${monthly.toFixed(1)}</span></div>
+    `;
+  }).join('');
+}
+
+function updateEbikeDisplay() {
+  const eb = appData.expense.commute.eBike;
+  const weeklyKm = parseNum(eb.distance) * parseNum(eb.trips) * parseNum(eb.weeklyDays);
+  const chargesPerWeek = weeklyKm / (parseNum(eb.range) || 50);
+  const weeklyChargeCost = chargesPerWeek * (parseNum(eb.chargeCost) || 0);
+  const dailyCharge = weeklyChargeCost / 7;
+  const dailyAmortize = parseNum(eb.purchase) / (365 * 3);
+  const totalDaily = dailyCharge + dailyAmortize;
+  const el = document.getElementById('ebikeDailyCost');
+  if (el) el.textContent = formatMoney(totalDaily);
+}
+
+function updateStartupDisplay() {
+  const total = parseNum(appData.startup.oneTime.transport) + parseNum(appData.startup.oneTime.luggage) + parseNum(appData.startup.oneTime.deposit) + parseNum(appData.startup.oneTime.setup);
+  const el = document.getElementById('startupTotalDisplay');
+  if (el) el.textContent = formatMoney(total);
+}
+
+function bindGlobalEvents() {
+  document.addEventListener('click', (e) => {
+    const target = e.target;
+
+    if (target.classList.contains('toggle-btn')) {
+      const targetEl = document.getElementById(target.dataset.target);
+      if (targetEl) targetEl.classList.toggle('open');
+      return;
+    }
+
+    if (target.dataset.action === 'toggleCommute') {
+      const type = target.dataset.type;
+      const types = appData.expense.commute.types || [];
+      const idx = types.indexOf(type);
+      if (idx >= 0) {
+        types.splice(idx, 1);
+        target.classList.remove('active');
+      } else {
+        types.push(type);
+        target.classList.add('active');
+      }
+      appData.expense.commute.types = types;
+      renderCommuteContent();
+      recalculate();
+      return;
+    }
+
+    if (target.dataset.action === 'addMealDetail') {
+      const item = target.dataset.item;
+      appData.expense.meals[item].detailed.push({ type: 'perTrip', name: '', price: 0, weeklyTimes: '' });
+      const simpleInput = document.getElementById('meal_' + item + '_simple');
+      if (simpleInput) {
+        simpleInput.value = '';
+      }
+      appData.expense.meals[item].simple = 0;
+      renderMealDetailRows(item + 'Rows', appData.expense.meals[item].detailed);
+      recalculate();
+      return;
+    }
+
+    if (target.dataset.action === 'deleteMealDetail') {
+      const item = target.dataset.item;
+      const idx = parseInt(target.dataset.idx);
+      appData.expense.meals[item].detailed.splice(idx, 1);
+      renderMealDetailRows(item + 'Rows', appData.expense.meals[item].detailed);
+      recalculate();
+      return;
+    }
+
+    if (target.id === 'addExtraBtn') {
+      appData.expense.meals.extras.push({ name: '', amount: 0, frequency: 'weekly' });
+      renderExtrasRows();
+      return;
+    }
+
+    if (target.dataset.action === 'deleteExtra') {
+      const idx = parseInt(target.dataset.idx);
+      appData.expense.meals.extras.splice(idx, 1);
+      renderExtrasRows();
+      recalculate();
+      return;
+    }
+
+    if (target.id === 'addParttimeBtn') {
+      appData.income.parttimeJobs.push({ name: '', amount: 0, frequency: 'monthly', intervalDays: 30 });
+      renderParttimeRows();
+      return;
+    }
+
+    if (target.dataset.action === 'deleteParttime') {
+      const idx = parseInt(target.dataset.idx);
+      appData.income.parttimeJobs.splice(idx, 1);
+      renderParttimeRows();
+      recalculate();
+      return;
+    }
+
+    if (target.dataset.action === 'toggleConsumable') {
+      const name = target.dataset.name;
+      const existing = appData.expense.consumables.find(c => c.name === name);
+      if (existing) {
+        appData.expense.consumables = appData.expense.consumables.filter(c => c.name !== name);
+        target.classList.remove('selected');
+      } else {
+        appData.expense.consumables.push({ name, price: 0, days: 30 });
+        target.classList.add('selected');
+      }
+      renderConsumableRows();
+      recalculate();
+      return;
+    }
+
+    if (target.dataset.action === 'addCustomConsumable') {
+      appData.expense.consumables.push({ name: '', price: 0, days: 30 });
+      renderConsumableRows();
+      return;
+    }
+
+    if (target.dataset.action === 'deleteConsumable') {
+      const idx = parseInt(target.dataset.idx);
+      const name = appData.expense.consumables[idx].name;
+      appData.expense.consumables.splice(idx, 1);
+      document.querySelectorAll('#consumablesContent .tag[data-name]').forEach(t => {
+        if (t.dataset.name === name) t.classList.remove('selected');
+      });
+      renderConsumableRows();
+      recalculate();
+      return;
+    }
+
+    if (target.dataset.action === 'toggleMembership') {
+      const id = target.dataset.id;
+      const price = parseNum(target.dataset.price);
+      const existing = appData.expense.memberships.find(m => m.id === id);
+      if (existing) {
+        appData.expense.memberships = appData.expense.memberships.filter(m => m.id !== id);
+        target.classList.remove('selected');
+      } else {
+        appData.expense.memberships.push({ id, price, cycle: 'monthly' });
+        target.classList.add('selected');
+      }
+      renderMembershipRows();
+      recalculate();
+      return;
+    }
+
+    if (target.dataset.action === 'addCustomMembership') {
+      appData.expense.memberships.push({ id: '', price: 0, cycle: 'monthly' });
+      renderMembershipRows();
+      return;
+    }
+
+    if (target.dataset.action === 'deleteMembership') {
+      const idx = parseInt(target.dataset.idx);
+      const id = appData.expense.memberships[idx].id;
+      appData.expense.memberships.splice(idx, 1);
+      document.querySelectorAll('#membershipContent .tag[data-id]').forEach(t => {
+        if (t.dataset.id === id) t.classList.remove('selected');
+      });
+      renderMembershipRows();
+      recalculate();
+      return;
+    }
+
+    if (target.id === 'addEntertainmentBtn') {
+      appData.expense.entertainment.push({ name: '', amount: 0, frequency: 'monthly' });
+      renderEntertainmentRows();
+      return;
+    }
+
+    if (target.dataset.action === 'deleteEntertainment') {
+      const idx = parseInt(target.dataset.idx);
+      appData.expense.entertainment.splice(idx, 1);
+      renderEntertainmentRows();
+      recalculate();
+      return;
+    }
+
+    if (target.id === 'addSavingsBtn') {
+      appData.savings.goals.push({ name: '', targetAmount: 0, planMonths: 1 });
+      renderSavingsRows();
+      recalculate();
+      return;
+    }
+
+    if (target.dataset.action === 'deleteSavings') {
+      const idx = parseInt(target.dataset.idx);
+      appData.savings.goals.splice(idx, 1);
+      renderSavingsRows();
+      recalculate();
+      return;
+    }
+  });
+
+  document.addEventListener('input', (e) => {
+    const target = e.target;
+
+    if (target.id === 'intern_salaryType') {
+      appData.income.internship.salaryType = target.value;
+      renderIdentityContent();
+      recalculate();
+      return;
+    }
+
+    if (target.id === 'intern_salary') { appData.income.internship.salary = parseNum(target.value); recalculate(); return; }
+    if (target.id === 'intern_workDays') { appData.income.internship.workDaysPerWeek = parseNum(target.value); recalculate(); return; }
+    if (target.id === 'intern_hoursDay') { appData.income.internship.hoursPerDay = parseNum(target.value); recalculate(); return; }
+    if (target.id === 'mealSubsidy_enabled') { appData.income.internship.mealSubsidy.enabled = target.checked; document.getElementById('mealSubsidyFields').style.display = target.checked ? '' : 'none'; recalculate(); return; }
+    if (target.id === 'mealSubsidy_perMeal') { appData.income.internship.mealSubsidy.perMeal = parseNum(target.value); recalculate(); return; }
+    if (target.id === 'mealSubsidy_lunch') { appData.income.internship.mealSubsidy.coversLunch = target.checked; recalculate(); return; }
+    if (target.id === 'mealSubsidy_dinner') { appData.income.internship.mealSubsidy.coversDinner = target.checked; recalculate(); return; }
+    if (target.id === 'mealSubsidy_waste') { appData.income.internship.mealSubsidy.wastePercent = parseNum(target.value); recalculate(); return; }
+    if (target.id === 'transportSubsidy_type') { appData.income.internship.transportSubsidy.type = target.value; recalculate(); return; }
+    if (target.id === 'transportSubsidy_amount') { appData.income.internship.transportSubsidy.amount = parseNum(target.value); recalculate(); return; }
+    if (target.id === 'grad_grant') { appData.income.graduate.grant = parseNum(target.value); recalculate(); return; }
+    if (target.id === 'grad_grantMonths') { appData.income.graduate.grantMonths = parseInt(target.value); recalculate(); return; }
+    if (target.id === 'grad_lab') { appData.income.graduate.labSubsidy = parseNum(target.value); recalculate(); return; }
+    if (target.id === 'grad_labMonths') { appData.income.graduate.labMonths = parseInt(target.value); recalculate(); return; }
+    if (target.id === 'grad_ta') { appData.income.graduate.taSubsidy = parseNum(target.value); recalculate(); return; }
+    if (target.id === 'grad_taMonths') { appData.income.graduate.taMonths = parseInt(target.value); recalculate(); return; }
+    if (target.id === 'grad_mentor') { appData.income.graduate.mentorBonus = parseNum(target.value); recalculate(); return; }
+    if (target.id === 'grad_mentorMonths') { appData.income.graduate.mentorMonths = parseInt(target.value); recalculate(); return; }
+    if (target.id === 'grad_project') { appData.income.graduate.projectIncome = parseNum(target.value); recalculate(); return; }
+    if (target.id === 'grad_projectMonths') { appData.income.graduate.projectMonths = parseInt(target.value); recalculate(); return; }
+    if (target.id === 'grad_award') { appData.income.graduate.awardYearly = parseNum(target.value); recalculate(); return; }
+    if (target.id === 'grad_tuition') { appData.income.graduate.tuitionExpense = target.checked; document.getElementById('tuitionField').style.display = target.checked ? '' : 'none'; recalculate(); return; }
+    if (target.id === 'grad_tuitionYearly') { appData.income.graduate.tuitionYearly = parseNum(target.value); recalculate(); return; }
+    if (target.id === 'family_frequency') { appData.income.family.frequency = target.value; recalculate(); return; }
+    if (target.id === 'family_amount') { appData.income.family.amount = parseNum(target.value); recalculate(); return; }
+
+    if (target.classList.contains('meal-simple')) {
+      const key = target.id.replace('meal_', '').replace('_simple', '');
+      appData.expense.meals[key].simple = parseNum(target.value);
+      recalculate();
+      return;
+    }
+
+    if (target.classList.contains('detail-type')) {
+      const item = target.dataset.item;
+      const idx = parseInt(target.dataset.idx);
+      appData.expense.meals[item].detailed[idx].type = target.value;
+      renderMealDetailRows(item + 'Rows', appData.expense.meals[item].detailed);
+      recalculate();
+      return;
+    }
+
+    if (target.classList.contains('detail-name')) { const item = target.dataset.item; const idx = parseInt(target.dataset.idx); appData.expense.meals[item].detailed[idx].name = target.value; return; }
+    if (target.classList.contains('detail-price')) { const item = target.dataset.item; const idx = parseInt(target.dataset.idx); appData.expense.meals[item].detailed[idx].price = parseNum(target.value); recalculate(); return; }
+    if (target.classList.contains('detail-times')) { const item = target.dataset.item; const idx = parseInt(target.dataset.idx); appData.expense.meals[item].detailed[idx].weeklyTimes = parseNum(target.value); recalculate(); return; }
+    if (target.classList.contains('detail-totalPrice')) { const item = target.dataset.item; const idx = parseInt(target.dataset.idx); appData.expense.meals[item].detailed[idx].totalPrice = parseNum(target.value); recalculate(); return; }
+    if (target.classList.contains('detail-totalQty')) { const item = target.dataset.item; const idx = parseInt(target.dataset.idx); appData.expense.meals[item].detailed[idx].totalQuantity = parseNum(target.value); recalculate(); return; }
+    if (target.classList.contains('detail-weeklyTimes')) { const item = target.dataset.item; const idx = parseInt(target.dataset.idx); appData.expense.meals[item].detailed[idx].weeklyTimes = parseNum(target.value); recalculate(); return; }
+    if (target.classList.contains('detail-itemsPerUse')) { const item = target.dataset.item; const idx = parseInt(target.dataset.idx); appData.expense.meals[item].detailed[idx].itemsPerUse = parseNum(target.value); recalculate(); return; }
+
+    if (target.classList.contains('extra-name')) { const idx = parseInt(target.dataset.idx); appData.expense.meals.extras[idx].name = target.value; return; }
+    if (target.classList.contains('extra-amount')) { const idx = parseInt(target.dataset.idx); appData.expense.meals.extras[idx].amount = parseNum(target.value); recalculate(); return; }
+    if (target.classList.contains('extra-freq')) { const idx = parseInt(target.dataset.idx); appData.expense.meals.extras[idx].frequency = target.value; recalculate(); return; }
+
+    if (target.classList.contains('job-name')) { const idx = parseInt(target.dataset.idx); appData.income.parttimeJobs[idx].name = target.value; return; }
+    if (target.classList.contains('job-amount')) { const idx = parseInt(target.dataset.idx); appData.income.parttimeJobs[idx].amount = parseNum(target.value); recalculate(); return; }
+    if (target.classList.contains('job-freq')) {
+      const idx = parseInt(target.dataset.idx);
+      appData.income.parttimeJobs[idx].frequency = target.value;
+      const row = target.closest('.dynamic-row');
+      if (row && row.nextElementSibling) {
+        row.nextElementSibling.style.display = target.value === 'once' ? '' : 'none';
+      }
+      recalculate();
+      return;
+    }
+    if (target.classList.contains('job-interval')) { const idx = parseInt(target.dataset.idx); appData.income.parttimeJobs[idx].intervalDays = parseNum(target.value); recalculate(); return; }
+
+    if (target.id === 'commute_walk') { appData.expense.commute.walk = parseNum(target.value); recalculate(); return; }
+
+    if (target.id === 'bike_type') {
+      appData.expense.commute.bike.type = target.value;
+      document.getElementById('bikeMonthlyField').style.display = target.value === 'monthly' ? '' : 'none';
+      document.getElementById('bikePerTripField').style.display = target.value === 'perTrip' ? '' : 'none';
+      document.getElementById('bikePurchaseField').style.display = target.value === 'purchase' ? '' : 'none';
+      recalculate();
+      return;
+    }
+    if (target.id === 'bike_monthly') { appData.expense.commute.bike.monthly = parseNum(target.value); recalculate(); return; }
+    if (target.id === 'bike_perTrip') { appData.expense.commute.bike.perTrip = parseNum(target.value); recalculate(); return; }
+    if (target.id === 'bike_weekly') { appData.expense.commute.bike.weekly = parseNum(target.value); recalculate(); return; }
+    if (target.id === 'bike_purchase') { appData.expense.commute.bike.purchase = parseNum(target.value); recalculate(); return; }
+    if (target.id === 'bike_maintenance') { appData.expense.commute.bike.maintenance = parseNum(target.value); recalculate(); return; }
+
+    if (target.id === 'ebike_distance') { appData.expense.commute.eBike.distance = parseNum(target.value); updateEbikeDisplay(); recalculate(); return; }
+    if (target.id === 'ebike_trips') { appData.expense.commute.eBike.trips = parseNum(target.value); updateEbikeDisplay(); recalculate(); return; }
+    if (target.id === 'ebike_range') { appData.expense.commute.eBike.range = parseNum(target.value); updateEbikeDisplay(); recalculate(); return; }
+    if (target.id === 'ebike_chargeCost') { appData.expense.commute.eBike.chargeCost = parseNum(target.value); updateEbikeDisplay(); recalculate(); return; }
+    if (target.id === 'ebike_weeklyDays') { appData.expense.commute.eBike.weeklyDays = parseNum(target.value); updateEbikeDisplay(); recalculate(); return; }
+    if (target.id === 'ebike_purchase') { appData.expense.commute.eBike.purchase = parseNum(target.value); updateEbikeDisplay(); recalculate(); return; }
+
+    if (target.id === 'bus_type') {
+      appData.expense.commute.bus.type = target.value;
+      document.getElementById('busMonthlyField').style.display = target.value === 'monthly' ? '' : 'none';
+      document.getElementById('busPerTripField').style.display = target.value === 'perTrip' ? '' : 'none';
+      recalculate();
+      return;
+    }
+    if (target.id === 'bus_monthly') { appData.expense.commute.bus.monthly = parseNum(target.value); recalculate(); return; }
+    if (target.id === 'bus_go_price') { 
+      if (!appData.expense.commute.bus.goTrip) appData.expense.commute.bus.goTrip = { price: 0, weekly: 0 };
+      appData.expense.commute.bus.goTrip.price = parseNum(target.value); recalculate(); return; 
+    }
+    if (target.id === 'bus_go_weekly') { 
+      if (!appData.expense.commute.bus.goTrip) appData.expense.commute.bus.goTrip = { price: 0, weekly: 0 };
+      appData.expense.commute.bus.goTrip.weekly = parseNum(target.value); recalculate(); return; 
+    }
+    if (target.id === 'bus_return_price') { 
+      if (!appData.expense.commute.bus.returnTrip) appData.expense.commute.bus.returnTrip = { price: 0, weekly: 0 };
+      appData.expense.commute.bus.returnTrip.price = parseNum(target.value); recalculate(); return; 
+    }
+    if (target.id === 'bus_return_weekly') { 
+      if (!appData.expense.commute.bus.returnTrip) appData.expense.commute.bus.returnTrip = { price: 0, weekly: 0 };
+      appData.expense.commute.bus.returnTrip.weekly = parseNum(target.value); recalculate(); return; 
+    }
+
+    if (target.id === 'taxi_go_price') { 
+      if (!appData.expense.commute.taxi) appData.expense.commute.taxi = { goTrip: { price: 0, weekly: 0 }, returnTrip: { price: 0, weekly: 0 } };
+      if (!appData.expense.commute.taxi.goTrip) appData.expense.commute.taxi.goTrip = { price: 0, weekly: 0 };
+      appData.expense.commute.taxi.goTrip.price = parseNum(target.value); recalculate(); return; 
+    }
+    if (target.id === 'taxi_go_weekly') { 
+      if (!appData.expense.commute.taxi) appData.expense.commute.taxi = { goTrip: { price: 0, weekly: 0 }, returnTrip: { price: 0, weekly: 0 } };
+      if (!appData.expense.commute.taxi.goTrip) appData.expense.commute.taxi.goTrip = { price: 0, weekly: 0 };
+      appData.expense.commute.taxi.goTrip.weekly = parseNum(target.value); recalculate(); return; 
+    }
+    if (target.id === 'taxi_return_price') { 
+      if (!appData.expense.commute.taxi) appData.expense.commute.taxi = { goTrip: { price: 0, weekly: 0 }, returnTrip: { price: 0, weekly: 0 } };
+      if (!appData.expense.commute.taxi.returnTrip) appData.expense.commute.taxi.returnTrip = { price: 0, weekly: 0 };
+      appData.expense.commute.taxi.returnTrip.price = parseNum(target.value); recalculate(); return; 
+    }
+    if (target.id === 'taxi_return_weekly') { 
+      if (!appData.expense.commute.taxi) appData.expense.commute.taxi = { goTrip: { price: 0, weekly: 0 }, returnTrip: { price: 0, weekly: 0 } };
+      if (!appData.expense.commute.taxi.returnTrip) appData.expense.commute.taxi.returnTrip = { price: 0, weekly: 0 };
+      appData.expense.commute.taxi.returnTrip.weekly = parseNum(target.value); recalculate(); return; 
+    }
+
+    if (target.id === 'housing_rent') { appData.expense.housing.rent = parseNum(target.value); recalculate(); return; }
+    if (target.id === 'housing_elec') { appData.expense.housing.utilities.electricity = parseNum(target.value); recalculate(); return; }
+    if (target.id === 'housing_water') { appData.expense.housing.utilities.water = parseNum(target.value); recalculate(); return; }
+    if (target.id === 'housing_gas') { appData.expense.housing.utilities.gas = parseNum(target.value); recalculate(); return; }
+    if (target.id === 'housing_inet') { appData.expense.housing.utilities.internet = parseNum(target.value); recalculate(); return; }
+    if (target.id === 'housing_mgmt') { appData.expense.housing.management = parseNum(target.value); recalculate(); return; }
+    if (target.id === 'ac_enabled') { appData.expense.housing.ac.enabled = target.checked; document.getElementById('acFields').style.display = target.checked ? '' : 'none'; recalculate(); return; }
+    if (target.id === 'ac_summer') { appData.expense.housing.ac.summer = parseNum(target.value); recalculate(); return; }
+    if (target.id === 'ac_winter') { appData.expense.housing.ac.winter = parseNum(target.value); recalculate(); return; }
+
+    if (target.classList.contains('cons-name')) { const idx = parseInt(target.dataset.idx); appData.expense.consumables[idx].name = target.value; return; }
+    if (target.classList.contains('cons-price')) { const idx = parseInt(target.dataset.idx); appData.expense.consumables[idx].price = parseNum(target.value); recalculate(); return; }
+    if (target.classList.contains('cons-days')) { const idx = parseInt(target.dataset.idx); appData.expense.consumables[idx].days = parseNum(target.value); recalculate(); return; }
+
+    if (target.classList.contains('member-price')) { const idx = parseInt(target.dataset.idx); appData.expense.memberships[idx].price = parseNum(target.value); recalculate(); return; }
+    if (target.classList.contains('member-cycle')) { const idx = parseInt(target.dataset.idx); appData.expense.memberships[idx].cycle = target.value; recalculate(); return; }
+    if (target.classList.contains('member-name')) { const idx = parseInt(target.dataset.idx); appData.expense.memberships[idx].name = target.value; return; }
+    if (target.id === 'member_name') { const idx = parseInt(target.dataset.idx); appData.expense.memberships[idx].id = target.value; return; }
+
+    if (target.classList.contains('ent-name')) { const idx = parseInt(target.dataset.idx); appData.expense.entertainment[idx].name = target.value; return; }
+    if (target.classList.contains('ent-amount')) { const idx = parseInt(target.dataset.idx); appData.expense.entertainment[idx].amount = parseNum(target.value); recalculate(); return; }
+    if (target.classList.contains('ent-freq')) { const idx = parseInt(target.dataset.idx); appData.expense.entertainment[idx].frequency = target.value; recalculate(); return; }
+
+    if (target.id === 'health_monthly') { appData.expense.health = parseNum(target.value); recalculate(); return; }
+
+    if (target.id === 'startup_transport') { appData.startup.oneTime.transport = parseNum(target.value); updateStartupDisplay(); recalculate(); return; }
+    if (target.id === 'startup_luggage') { appData.startup.oneTime.luggage = parseNum(target.value); updateStartupDisplay(); recalculate(); return; }
+    if (target.id === 'startup_deposit') { appData.startup.oneTime.deposit = parseNum(target.value); updateStartupDisplay(); recalculate(); return; }
+    if (target.id === 'startup_setup') { appData.startup.oneTime.setup = parseNum(target.value); updateStartupDisplay(); recalculate(); return; }
+    if (target.id === 'startup_recurring_enabled') { appData.startup.recurring.enabled = target.checked; document.getElementById('recurringFields').style.display = target.checked ? '' : 'none'; recalculate(); return; }
+    if (target.id === 'startup_recurring_dest') { appData.startup.recurring.destination = target.value; recalculate(); return; }
+    if (target.id === 'startup_recurring_cost') { appData.startup.recurring.cost = parseNum(target.value); recalculate(); return; }
+    if (target.id === 'startup_recurring_freq') { appData.startup.recurring.frequency = target.value; recalculate(); return; }
+    if (target.id === 'startup_amortize') { appData.startup.amortize = target.checked; document.getElementById('amortizeField').style.display = target.checked ? '' : 'none'; recalculate(); return; }
+    if (target.id === 'startup_months') { appData.startup.months = parseNum(target.value); recalculate(); return; }
+
+    if (target.id === 'savings_enabled') { appData.savings.enabled = target.checked; document.getElementById('savingsFields').style.display = target.checked ? '' : 'none'; recalculate(); return; }
+    if (target.classList.contains('savings-name')) { const idx = parseInt(target.dataset.idx); appData.savings.goals[idx].name = target.value; return; }
+    if (target.classList.contains('savings-amount')) { const idx = parseInt(target.dataset.idx); appData.savings.goals[idx].targetAmount = parseNum(target.value); renderSavingsRows(); recalculate(); return; }
+    if (target.classList.contains('savings-months')) { const idx = parseInt(target.dataset.idx); appData.savings.goals[idx].planMonths = parseNum(target.value); renderSavingsRows(); recalculate(); return; }
+  });
+}
+
+function bindIdentityToggleEvents() {
+  document.querySelectorAll('.identity-tag').forEach(tag => {
+    tag.addEventListener('click', () => {
+      const identity = tag.dataset.identity;
+      appData.identity[identity] = !appData.identity[identity];
+      tag.classList.toggle('active');
+      renderIdentityContent();
+      recalculate();
+    });
+  });
+}
+
+function bindSectionToggleEvents() {
+  document.querySelectorAll('.section-header').forEach(header => {
+    header.addEventListener('click', (e) => {
+      if (e.target.closest('.section-summary')) return;
+      header.parentElement.classList.toggle('expanded');
+    });
+  });
+}
+
+function bindPresetEvents() {
+  document.querySelectorAll('.preset-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const presetId = btn.dataset.preset;
+      document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+
+      if (presetId === 'none') {
+        appData = JSON.parse(JSON.stringify(DEFAULT_DATA));
+        appData.preset = 'none';
+      } else if (PRESETS[presetId]) {
+        appData = deepMerge(JSON.parse(JSON.stringify(DEFAULT_DATA)), PRESETS[presetId]);
+        appData.preset = presetId;
+      }
+
+      updateUI();
+      saveData();
+    });
+  });
+}
+
+function updateUI() {
+  document.querySelectorAll('.identity-tag').forEach(tag => {
+    const identity = tag.dataset.identity;
+    tag.classList.toggle('active', appData.identity[identity]);
+  });
+
+  if (appData.preset && appData.preset !== 'none') {
+    document.querySelectorAll('.preset-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.preset === appData.preset);
+    });
+  }
+
+  renderIdentityContent();
+  renderMealsContent();
+  renderCommuteContent();
+  renderHousingContent();
+  renderConsumablesContent();
+  renderMembershipContent();
+  renderEntertainmentContent();
+  renderStartupContent();
+  renderSavingsContent();
+  recalculate();
+}
+
+function init() {
+  loadData();
+  updateUI();
+  bindGlobalEvents();
+  bindIdentityToggleEvents();
+  bindSectionToggleEvents();
+  bindPresetEvents();
+
+  document.getElementById('resetBtn')?.addEventListener('click', () => {
+    if (confirm('确定要重置所有数据吗？')) {
+      appData = JSON.parse(JSON.stringify(DEFAULT_DATA));
+      saveData();
+      updateUI();
+    }
+  });
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+
+</body>
+</html>
